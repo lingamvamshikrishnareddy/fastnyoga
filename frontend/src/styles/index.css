@@ -1,0 +1,120 @@
+/* Base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .container {
+    @apply bg-white/80 rounded-2xl shadow-lg backdrop-blur-2xl border border-white/20 p-8 mx-auto my-8 max-w-7xl transition-all duration-300;
+  }
+
+  .glow {
+    @apply shadow-[0_0_20px_rgba(0,122,255,0.3)] transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,122,255,0.5)] hover:-translate-y-0.5;
+  }
+
+  .gradient-border {
+    @apply border-2 border-transparent rounded-xl bg-gradient-to-r from-blue-500 to-blue-300 bg-origin-border;
+  }
+
+  .button {
+    @apply bg-blue-500 rounded-lg text-white py-3 px-6 text-base font-semibold cursor-pointer transition-all duration-300 no-underline
+           hover:bg-blue-400 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  .glass-card {
+    @apply bg-white/60 shadow-lg backdrop-blur-md rounded-2xl border border-white/20 p-6 my-6 
+           transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-500 to-blue-300 bg-clip-text text-transparent;
+  }
+
+  .neumorphic {
+    @apply bg-gray-100 shadow-[10px_10px_20px_#d1d1d4,-10px_-10px_20px_#ffffff] rounded-2xl p-6 
+           transition-all duration-300 hover:shadow-[15px_15px_30px_#d1d1d4,-15px_-15px_30px_#ffffff];
+  }
+
+  .animated-header {
+    @apply bg-white/80 py-4 px-8 shadow-sm sticky top-0 z-50 backdrop-blur-md;
+  }
+
+  .logo {
+    @apply text-3xl font-bold text-blue-500 no-underline flex overflow-visible leading-tight py-0.5 
+           hover:text-blue-400 transition-colors duration-300;
+  }
+
+  .nav-links {
+    @apply flex gap-6;
+  }
+
+  .nav-links a {
+    @apply text-gray-900 no-underline font-medium transition-colors duration-300 hover:text-blue-500;
+  }
+
+  .form {
+    @apply flex flex-col gap-6 max-w-md mx-auto;
+  }
+
+  .form-input {
+    @apply p-3 border border-gray-200 rounded-lg text-base transition-all duration-300
+           focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 flex justify-center items-center z-50;
+  }
+
+  .modal-container {
+    @apply bg-white rounded-lg p-6 w-full max-w-md mx-5 relative shadow-lg;
+  }
+
+  .error-message {
+    @apply bg-red-100 border border-red-500 text-red-700 p-3 rounded mb-4 text-sm;
+  }
+
+  .dashboard {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+
+  .stat-card {
+    @apply bg-white rounded-2xl p-6 shadow-md transition-all duration-300
+           hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .fasting-timer {
+    @apply bg-gray-100 rounded-2xl p-8 shadow-[10px_10px_20px_#d1d1d4,-10px_-10px_20px_#ffffff] 
+           transition-all duration-300 hover:shadow-[15px_15px_30px_#d1d1d4,-15px_-15px_30px_#ffffff];
+  }
+
+  .yoga-card {
+    @apply bg-white rounded-2xl p-6 shadow-md transition-all duration-300
+           hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .testimonial-card {
+    @apply bg-white/80 rounded-xl p-8 shadow-lg transition-all duration-300
+           hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .chart-container {
+    @apply bg-white rounded-xl p-8 shadow-md;
+  }
+}
+
+/* Responsive Design */
+@screen sm {
+  .container {
+    @apply p-6 my-6;
+  }
+}
+
+@screen md {
+  .animated-header nav {
+    @apply flex-row items-center;
+  }
+
+  .nav-links {
+    @apply flex-row w-auto mt-0;
+  }
+}
