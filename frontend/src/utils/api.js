@@ -272,7 +272,6 @@ export const auth = {
 };
 
 
-
 export const fasts = {
   getAll: async () => {
     const response = await api.get('/fasts');
@@ -289,11 +288,6 @@ export const fasts = {
     return response.data;
   },
 
-  update: async (id, data) => {
-    const response = await api.patch(`/fasts/${id}`, data);
-    return response.data;
-  },
-
   end: async (id) => {
     const response = await api.post(`/fasts/${id}/end`);
     return response.data;
@@ -304,6 +298,7 @@ export const fasts = {
     return response.data;
   }
 };
+
 
 export const weights = {
   add: createEndpoint('post', '/weights/add', 'Failed to add weight'),

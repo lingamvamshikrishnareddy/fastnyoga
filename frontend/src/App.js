@@ -24,7 +24,7 @@ import YogaExercises from './pages/YogaExercises';
 
 // Components
 import BMRCalculator from './components/BMRCalculator';
-import WeightTracker from './components/WeightTracker';
+
 
 const App = () => {
   return (
@@ -45,7 +45,6 @@ const App = () => {
               <Route element={<PrivateRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/fasting-timer" element={<FastingTimer />} />
-                <Route path="/weight-tracker" element={<WeightTracker />} />
                 <Route path="/yoga-exercises" element={<YogaExercises />} />
                 <Route path="/bmr-calculator" element={<BMRCalculator />} />
                 

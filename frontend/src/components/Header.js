@@ -15,7 +15,7 @@ const NavigationLink = ({ to, children }) => (
 const NAVIGATION_LINKS = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/fasting-timer', label: 'Fasting Timer' },
-  { to: '/weight-tracker', label: 'Weight Tracker' },
+  
   { to: '/yoga-exercises', label: 'Yoga Exercises' },
   { to: '/bmr-calculator', label: 'BMR Calculator' },
   { to: '/health-benefits', label: 'Health Benefits' },
