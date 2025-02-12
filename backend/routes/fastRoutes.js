@@ -1,22 +1,32 @@
+// routes/fastRoutes.js
 const express = require('express');
 const router = express.Router();
-const {
-  startFast,
-  endFast,
-  getUserFasts,
-  updateFast,
-  getCurrentFast,
-  getFastElapsedTime,
-  getFastingStats
-} = require('../controllers/fastController');
-const auth = require('../middleware/authMiddleware');
+const authMiddleware = require('../middleware/authMiddleware'); // Changed from auth to authMiddleware to match server.js
+const fastController = require('../controllers/fastController');
 
-router.post('/start', auth, startFast);
-router.put('/end/:fastId', auth, endFast);
-router.get('/user', auth, getUserFasts);
-router.put('/update/:fastId', auth, updateFast);
-router.get('/current', auth, getCurrentFast);
-router.get('/elapsed/:fastId', auth, getFastElapsedTime);
-router.get('/stats', auth, getFastingStats);
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// Route definitions
+// Get all fasts for the user with pagination
+router.get('/', fastController.getUserFasts);
+
+// Get current active fast
+router.get('/current', fastController.getCurrentFast);
+
+// Get fasting statistics
+router.get('/stats', fastController.getFastingStats);
+
+// Get elapsed time for a specific fast
+router.get('/:id/elapsed', fastController.getFastElapsedTime);
+
+// Start a new fast
+router.post('/', fastController.startFast);
+
+// End a fast
+router.put('/:id/end', fastController.endFast);
+
+// Update a fast
+router.put('/:id', fastController.updateFast);
 
 module.exports = router;

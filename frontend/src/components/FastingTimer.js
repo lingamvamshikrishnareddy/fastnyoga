@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, Flame, Activity, DropletIcon } from 'lucide-react';
+import { Clock, Flame, Activity, DropletIcon, History } from 'lucide-react';
 import { fasts } from '../utils/api';
 
 const FASTING_STAGES = {
@@ -68,7 +68,8 @@ const FastingTimer = () => {
     return stored ? JSON.parse(stored) : {
       targetHours: 16,
       customHours: '',
-      lastStartTime: null
+      lastStartTime: null,
+      lastFastId: null
     };
   });
 
@@ -78,15 +79,17 @@ const FastingTimer = () => {
     elapsedTime: 0,
     targetHours: userPreferences.targetHours,
     caloriesBurned: 0,
-    currentStage: FASTING_STAGES.INITIAL, // Initialize with the full INITIAL stage object
+    currentStage: FASTING_STAGES.INITIAL,
     fastId: null
   });
 
+  const [fastingHistory, setFastingHistory] = useState([]);
   const [customHours, setCustomHours] = useState(userPreferences.customHours);
   const [selectedDateTime, setSelectedDateTime] = useState(new Date());
   const [showTips, setShowTips] = useState(false);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const circleRef = useRef(null);
   const progressRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -98,6 +101,16 @@ const FastingTimer = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }, []);
 
+  const formatDate = useCallback((dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }, []);
+
   const calculateProgress = useCallback(() => {
     if (!fastState.isRunning) return 0;
     const progress = (fastState.elapsedTime / (fastState.targetHours * 3600000)) * 100;
@@ -106,7 +119,6 @@ const FastingTimer = () => {
 
   const getCurrentStage = useCallback((elapsedHours) => {
     if (elapsedHours <= 0) return FASTING_STAGES.INITIAL;
-
     const stages = Object.values(FASTING_STAGES);
     for (const stage of stages) {
       if (elapsedHours <= stage.maxHours) {
@@ -124,30 +136,166 @@ const FastingTimer = () => {
     return Math.max(0, Math.round((BASE_RATE * FASTING_MULTIPLIER / 24) * hoursElapsed));
   }, []);
 
+  const loadFastingHistory = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fasts.getAll();
+      
+      if (response?.fasts) {
+        setFastingHistory(response.fasts);
+        
+        const activeFast = response.fasts.find(fast => !fast.endTime);
+        if (activeFast) {
+          const now = Date.now();
+          const startTime = new Date(activeFast.startTime).getTime();
+          const elapsedTime = now - startTime;
+          
+          setFastState(prev => ({
+            ...prev,
+            isRunning: true,
+            startTime,
+            elapsedTime,
+            fastId: activeFast._id,
+            targetHours: activeFast.targetHours,
+            currentStage: getCurrentStage(elapsedTime / 3600000)
+          }));
+          
+          setUserPreferences(prev => ({
+            ...prev,
+            lastStartTime: startTime,
+            lastFastId: activeFast._id,
+            targetHours: activeFast.targetHours
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load fasting history:', err);
+      setError('Unable to load fasting history. Please refresh the page.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getCurrentStage]);
+
+  const handleStart = useCallback(async () => {
+    try {
+      setError(null);
+      const now = Date.now();
+      const startTime = Math.max(now, selectedDateTime.getTime());
+      
+      let targetHrs = fastState.targetHours;
+      if (targetHrs === 'custom') {
+        targetHrs = parseFloat(customHours);
+        if (isNaN(targetHrs) || targetHrs <= 0 || targetHrs > 72) {
+          throw new Error('Please enter valid custom hours between 1 and 72');
+        }
+      } else {
+        targetHrs = parseFloat(targetHrs);
+      }
+
+      const response = await fasts.create({
+        targetHours: targetHrs,
+        startTime: new Date(startTime).toISOString()
+      });
+
+      if (!response?.fast?._id) {
+        throw new Error('Failed to create fast. Please try again.');
+      }
+
+      const newPreferences = {
+        ...userPreferences,
+        targetHours: targetHrs,
+        customHours,
+        lastStartTime: startTime,
+        lastFastId: response.fast._id
+      };
+
+      setUserPreferences(newPreferences);
+      localStorage.setItem('fastingPreferences', JSON.stringify(newPreferences));
+
+      setFastState(prev => ({
+        ...prev,
+        isRunning: true,
+        startTime,
+        elapsedTime: 0,
+        targetHours: targetHrs,
+        currentStage: FASTING_STAGES.INITIAL,
+        fastId: response.fast._id
+      }));
+
+      await loadFastingHistory();
+
+    } catch (err) {
+      console.error('Failed to start fast:', err);
+      setError(err.message || 'Failed to start fast. Please try again.');
+    }
+  }, [selectedDateTime, customHours, fastState.targetHours, userPreferences, loadFastingHistory]);
+
+  const handleStop = useCallback(async () => {
+    if (!window.confirm('Are you sure you want to end your fast?')) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const fastId = fastState.fastId || userPreferences.lastFastId;
+
+      if (!fastId) {
+        throw new Error('No active fast found');
+      }
+
+      await fasts.end(fastId);
+
+      const newPreferences = {
+        ...userPreferences,
+        lastStartTime: null,
+        lastFastId: null
+      };
+      
+      setUserPreferences(newPreferences);
+      localStorage.setItem('fastingPreferences', JSON.stringify(newPreferences));
+
+      setFastState(prev => ({
+        ...prev,
+        isRunning: false,
+        startTime: null,
+        elapsedTime: 0,
+        caloriesBurned: 0,
+        currentStage: FASTING_STAGES.INITIAL,
+        fastId: null
+      }));
+
+      await loadFastingHistory();
+      window.dispatchEvent(new CustomEvent('fastingStateChanged'));
+
+    } catch (err) {
+      console.error('Failed to end fast:', err);
+      if (err.status === 404) {
+        setFastState(prev => ({
+          ...prev,
+          isRunning: false,
+          startTime: null,
+          elapsedTime: 0,
+          fastId: null
+        }));
+        setUserPreferences(prev => ({
+          ...prev,
+          lastStartTime: null,
+          lastFastId: null
+        }));
+        await loadFastingHistory();
+      } else {
+        setError(err.message || 'Failed to end fast. Please try again.');
+      }
+    }
+  }, [fastState.fastId, userPreferences, loadFastingHistory]);
+
   useEffect(() => {
     localStorage.setItem('fastingPreferences', JSON.stringify(userPreferences));
   }, [userPreferences]);
 
   useEffect(() => {
-    const { lastStartTime, targetHours } = userPreferences;
-    if (!lastStartTime) return;
-
-    const now = Date.now();
-    const elapsedTime = now - lastStartTime;
-    const targetMs = (targetHours || 16) * 3600000;
-
-    if (elapsedTime > 0 && elapsedTime < targetMs) {
-      setFastState(prev => ({
-        ...prev,
-        isRunning: true,
-        startTime: lastStartTime,
-        elapsedTime,
-        targetHours
-      }));
-    } else if (elapsedTime >= targetMs) {
-      setUserPreferences(prev => ({ ...prev, lastStartTime: null }));
-    }
-  }, [userPreferences]);
+    loadFastingHistory();
+  }, [loadFastingHistory]);
 
   useEffect(() => {
     if (!fastState.isRunning) return;
@@ -178,74 +326,24 @@ const FastingTimer = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [fastState.isRunning, getCurrentStage, calculateCalories]);
+  }, [fastState.isRunning, getCurrentStage, calculateCalories, handleStop]);
 
-  const handleStart = useCallback(async () => {
-    try {
-      const now = Date.now();
-      const startTime = Math.max(now, selectedDateTime.getTime());
-      const targetHrs = customHours || fastState.targetHours;
-
-      const response = await fasts.create({
-        targetHours: targetHrs,
-        startTime: new Date(startTime).toISOString()
-      });
-
-      const { fast } = response;
-
-      setUserPreferences(prev => ({
-        ...prev,
-        targetHours: targetHrs,
-        customHours,
-        lastStartTime: startTime
-      }));
-
-      setFastState(prev => ({
-        ...prev,
-        isRunning: true,
-        startTime,
-        elapsedTime: 0,
-        targetHours: targetHrs,
-        currentStage: FASTING_STAGES.INITIAL,
-        fastId: fast._id
-      }));
-    } catch (error) {
-      console.error('Failed to start fast:', error);
-      alert('Failed to start fast. Please try again.');
-    }
-  }, [customHours, fastState.targetHours, selectedDateTime]);
-
-  const handleStop = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to end your fast?')) return;
-
-    try {
-      if (fastState.fastId) {
-        await fasts.update(fastState.fastId, {
-          endTime: new Date().toISOString(),
-          completed: true
-        });
-      }
-
-      setUserPreferences(prev => ({ ...prev, lastStartTime: null }));
-      setFastState(prev => ({
-        ...prev,
-        isRunning: false,
-        startTime: null,
-        elapsedTime: 0,
-        caloriesBurned: 0,
-        currentStage: FASTING_STAGES.INITIAL,
-        fastId: null
-      }));
-
-      window.dispatchEvent(new CustomEvent('fastingStateChanged'));
-    } catch (error) {
-      console.error('Failed to end fast:', error);
-      alert('Failed to end fast. Please try again.');
-    }
-  }, [fastState.fastId]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl p-10 shadow-lg transition-all duration-300 hover:translate-y-[-5px] hover:shadow-xl">
         <div className="relative w-80 h-80 mx-auto mb-12">
           <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
@@ -401,6 +499,51 @@ const FastingTimer = () => {
               </li>
             </ul>
           )}
+        </div>
+
+        <div className="mt-12 bg-white rounded-3xl p-10 shadow-lg">
+          <div className="flex items-center mb-6">
+            <History className="w-6 h-6 mr-3 text-gray-600" />
+            <h2 className="text-2xl font-semibold text-gray-900">Fasting History</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-3 px-4">Start Time</th>
+                  <th className="text-left py-3 px-4">End Time</th>
+                  <th className="text-left py-3 px-4">Duration</th>
+                  <th className="text-left py-3 px-4">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fastingHistory.map((fast) => (
+                  <tr key={fast._id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">{formatDate(fast.startTime)}</td>
+                    <td className="py-3 px-4">
+                      {fast.endTime ? formatDate(fast.endTime) : 'In Progress'}
+                    </td>
+                    <td className="py-3 px-4">
+                      {fast.endTime
+                        ? `${((new Date(fast.endTime) - new Date(fast.startTime)) / (1000 * 60 * 60)).toFixed(1)}h`
+                        : 'Ongoing'
+                      }
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded-full text-sm ${
+                        fast.completed
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {fast.completed ? 'Completed' : 'In Progress'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 const Fast = require('../models/Fast');
 const User = require('../models/User');
+const { isValidDate } = require('../utils/validation');
 
 // Helper function to get fasting tips based on hours
 const getFastingTips = (hours) => {
@@ -10,63 +11,82 @@ const getFastingTips = (hours) => {
   } else if (hours <= 24) {
     return "You're in deep ketosis. Listen to your body and break the fast if you feel unwell.";
   } else {
-    return "Extended fasting can be challenging. Consult with a healthcare professional for safety.";
+    return "Extended fasting requires careful monitoring. Consider consulting a healthcare professional.";
   }
 };
 
-// Function to start a new fast
 exports.startFast = async (req, res) => {
   try {
-    const { targetHours } = req.body;
+    const { targetHours, startTime, weightStart } = req.body;
     const userId = req.user.id;
 
-    // Input validation
-    if (!targetHours || targetHours <= 0 || targetHours > 168) { // Max 1 week
-      return res.status(400).json({ message: 'Invalid target hours' });
+    // Enhanced input validation
+    if (!targetHours || !Number.isFinite(targetHours) || targetHours <= 0 || targetHours > 168) {
+      return res.status(400).json({
+        message: 'Invalid target hours. Please enter a duration between 1 and 168 hours.'
+      });
     }
 
-    const now = new Date();
-    const endTime = new Date(now.getTime() + targetHours * 60 * 60 * 1000);
+    if (!startTime || !isValidDate(new Date(startTime))) {
+      return res.status(400).json({
+        message: 'Invalid start time provided.'
+      });
+    }
 
     // Check for existing active fast
-    const existingFast = await Fast.findOne({ user: userId, isRunning: true });
+    const existingFast = await Fast.findOne({
+      user: userId,
+      isRunning: true
+    });
+
     if (existingFast) {
-      return res.status(400).json({ message: 'You already have an active fast' });
+      return res.status(400).json({
+        message: 'You already have an active fast. Please end it before starting a new one.'
+      });
     }
 
+    const parsedStartTime = new Date(startTime);
+    
     const newFast = new Fast({
       user: userId,
-      startTime: now,
-      endTime: endTime,
+      startTime: parsedStartTime,
       targetHours,
+      weightStart,
       isRunning: true,
       elapsedTime: 0,
+      currentStage: 'INITIAL'
     });
 
     await newFast.save();
 
-    const tip = getFastingTips(targetHours);
+    res.status(201).json({
+      fast: newFast,
+      message: 'Fast started successfully',
+      tip: getFastingTips(targetHours)
+    });
 
-    res.status(201).json({ fast: newFast, tip });
   } catch (error) {
-    res.status(500).json({ message: 'Error starting fast', error: error.message });
+    console.error('Error in startFast:', error);
+    res.status(500).json({
+      message: 'Server error while starting fast',
+      error: error.message
+    });
   }
 };
 
-// Function to end an existing fast
 exports.endFast = async (req, res) => {
   try {
     const { fastId } = req.params;
+    const { mood, weightEnd, notes } = req.body;
     const userId = req.user.id;
 
-    const fast = await Fast.findById(fastId);
+    const fast = await Fast.findOne({
+      _id: fastId,
+      user: userId
+    });
 
     if (!fast) {
       return res.status(404).json({ message: 'Fast not found' });
-    }
-
-    if (fast.user.toString() !== userId) {
-      return res.status(403).json({ message: 'User not authorized' });
     }
 
     if (!fast.isRunning) {
@@ -78,14 +98,19 @@ exports.endFast = async (req, res) => {
     fast.completed = true;
     fast.isRunning = false;
     fast.elapsedTime = Math.max(0, now.getTime() - fast.startTime.getTime());
+    
+    if (mood) fast.mood = mood;
+    if (weightEnd) fast.weightEnd = weightEnd;
+    if (notes) fast.notes = notes;
 
     await fast.save();
 
+    // Update user stats and streaks
     const user = await User.findById(userId);
-    const lastCompletedFast = await Fast.findOne({ 
-      user: userId, 
-      completed: true, 
-      _id: { $ne: fast._id } 
+    const lastCompletedFast = await Fast.findOne({
+      user: userId,
+      completed: true,
+      _id: { $ne: fast._id }
     }).sort({ endTime: -1 });
 
     // Reset streak if last fast was more than 48 hours ago
@@ -95,19 +120,25 @@ exports.endFast = async (req, res) => {
       user.streak += 1;
     }
 
+    // Award badges based on achievements
     if (user.streak % 7 === 0 && !user.badges.includes('Weekly Warrior')) {
       user.badges.push('Weekly Warrior');
     }
 
     await user.save();
 
-    res.json({ fast, user: { streak: user.streak, badges: user.badges } });
+    res.json({
+      fast,
+      user: {
+        streak: user.streak,
+        badges: user.badges
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error ending fast', error: error.message });
   }
 };
 
-// Function to fetch the current active fast for the user
 exports.getCurrentFast = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -119,65 +150,18 @@ exports.getCurrentFast = async (req, res) => {
 
     const now = new Date();
     const elapsedTime = Math.max(0, now.getTime() - currentFast.startTime.getTime());
-    const remainingTime = Math.max(0, currentFast.endTime.getTime() - now.getTime());
-
-    const tip = getFastingTips(currentFast.targetHours);
+    const remainingTime = currentFast.getRemainingTime();
+    const progressPercentage = currentFast.progressPercentage;
 
     res.json({
       fast: currentFast,
       elapsedTime,
       remainingTime,
-      tip
+      progressPercentage,
+      tip: getFastingTips(currentFast.targetHours)
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching current fast', error: error.message });
-  }
-};
-
-// Helper function to validate date
-const isValidDate = (date) => {
-  return date instanceof Date && !isNaN(date);
-};
-
-// Helper function to check for active fasts
-const getActiveFast = async (userId) => {
-  return await Fast.findOne({ user: userId, isRunning: true });
-};
-
-
-
-// Function to update the elapsed time of an ongoing fast
-exports.updateFast = async (req, res) => {
-  try {
-    const { fastId } = req.params;
-    const { elapsedTime } = req.body;
-    const userId = req.user.id;
-
-    if (typeof elapsedTime !== 'number' || elapsedTime < 0) {
-      return res.status(400).json({ message: 'Invalid elapsed time' });
-    }
-
-    const fast = await Fast.findById(fastId);
-
-    if (!fast) {
-      return res.status(404).json({ message: 'Fast not found' });
-    }
-
-    if (fast.user.toString() !== userId) {
-      return res.status(403).json({ message: 'User not authorized' });
-    }
-
-    if (!fast.isRunning) {
-      return res.status(400).json({ message: 'Fast is already completed' });
-    }
-
-    const maxElapsedTime = Date.now() - fast.startTime.getTime();
-    fast.elapsedTime = Math.min(elapsedTime, maxElapsedTime);
-    await fast.save();
-
-    res.json(fast);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating fast', error: error.message });
   }
 };
 
@@ -186,63 +170,73 @@ exports.getUserFasts = async (req, res) => {
     const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'startTime';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
 
     const fasts = await Fast.find({ user: userId })
-      .sort({ startTime: -1 })
+      .sort({ [sortBy]: sortOrder })
       .skip((page - 1) * limit)
       .limit(limit);
 
     const total = await Fast.countDocuments({ user: userId });
 
     res.json({
-      data: fasts, // Wrap the fasts array in a 'data' property
+      data: fasts,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
-      totalFasts: total
+      totalFasts: total,
+      hasNextPage: page * limit < total,
+      hasPrevPage: page > 1
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching fasts', error: error.message });
   }
 };
 
-// Function to get the elapsed time for a specific fast
-exports.getFastElapsedTime = async (req, res) => {
-  try {
-    const { fastId } = req.params;
-    const userId = req.user.id;
-
-    const fast = await Fast.findById(fastId);
-
-    if (!fast) {
-      return res.status(404).json({ message: 'Fast not found' });
-    }
-
-    if (fast.user.toString() !== userId) {
-      return res.status(403).json({ message: 'User not authorized' });
-    }
-
-    const now = new Date();
-    const elapsedTime = fast.isRunning 
-      ? now.getTime() - fast.startTime.getTime() 
-      : fast.elapsedTime;
-
-    res.json({ elapsedTime });
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching elapsed time', error: error.message });
-  }
-};
-
 exports.getFastingStats = async (req, res) => {
   try {
     const userId = req.user.id;
-    const totalFasts = await Fast.countDocuments({ user: userId });
-    const completedFasts = await Fast.countDocuments({ user: userId, completed: true });
-    const longestFast = await Fast.findOne({ user: userId, completed: true }).sort('-elapsedTime').limit(1);
     
+    const stats = await Fast.aggregate([
+      { $match: { user: mongoose.Types.ObjectId(userId), completed: true } },
+      {
+        $group: {
+          _id: null,
+          totalFasts: { $sum: 1 },
+          completedFasts: { $sum: 1 },
+          averageElapsedTime: { $avg: '$elapsedTime' },
+          longestFast: { $max: '$elapsedTime' },
+          totalFastingHours: {
+            $sum: { $divide: ['$elapsedTime', 3600000] }
+          },
+          averageWeightLoss: {
+            $avg: { $subtract: ['$weightEnd', '$weightStart'] }
+          }
+        }
+      }
+    ]);
+
+    // Get mood distribution
+    const moodStats = await Fast.aggregate([
+      { $match: { user: mongoose.Types.ObjectId(userId), completed: true, mood: { $exists: true } } },
+      {
+        $group: {
+          _id: '$mood',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
     res.json({
-      totalFasts,
-      completedFasts,
-      longestFast: longestFast ? longestFast.elapsedTime : 0
+      statistics: stats[0] || {
+        totalFasts: 0,
+        completedFasts: 0,
+        averageElapsedTime: 0,
+        longestFast: 0,
+        totalFastingHours: 0,
+        averageWeightLoss: 0
+      },
+      moodDistribution: moodStats
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching fasting stats', error: error.message });

@@ -5,7 +5,7 @@ import { Trophy, Flame, Clock, Medal } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/card';
 
 function Dashboard() {
-  const { user, setUser } = useAuth() || {};
+  const { user, setUser } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,18 +13,27 @@ function Dashboard() {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/dashboard/stats');
-      setStats(res.data.stats);
-      if (setUser) {
+      setError(null);
+
+      const response = await api.get('/dashboard/stats');
+      const data = response.data;
+
+      if (!data || !data.stats) {
+        throw new Error('Invalid response from server');
+      }
+
+      setStats(data.stats);
+
+      if (setUser && data.user) {
         setUser(prevUser => ({
           ...prevUser,
-          streak: res.data.streak,
-          badges: res.data.badges,
+          streak: data.user.streak,
+          badges: data.user.badges,
         }));
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      setError('Failed to load dashboard data');
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -32,15 +41,19 @@ function Dashboard() {
 
   useEffect(() => {
     let isMounted = true;
+
     const handleFastingStateChange = () => {
       if (isMounted) {
         fetchStats();
       }
     };
-    // Listen for fasting state changes
+
+    // Set up event listener for fasting state changes
     window.addEventListener('fastingStateChanged', handleFastingStateChange);
-    
+
     fetchStats();
+
+    // Cleanup
     return () => {
       isMounted = false;
       window.removeEventListener('fastingStateChanged', handleFastingStateChange);

@@ -19,7 +19,7 @@ import HealthBenefits from './pages/HealthBenefits';
 // Protected Pages
 import Dashboard from './pages/Dashboard';
 import FastingTimer from './pages/FastingTimer'; // Moved from components to pages
-import JourneyLog from './pages/JourneyLog';
+
 import YogaExercises from './pages/YogaExercises';
 
 // Components
@@ -48,7 +48,7 @@ const App = () => {
                 <Route path="/weight-tracker" element={<WeightTracker />} />
                 <Route path="/yoga-exercises" element={<YogaExercises />} />
                 <Route path="/bmr-calculator" element={<BMRCalculator />} />
-                <Route path="/journey-log" element={<JourneyLog />} />
+                
               </Route>
 
               {/* Catch all route - redirect to home */}

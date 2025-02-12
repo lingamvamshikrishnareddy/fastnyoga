@@ -18,7 +18,6 @@ const NAVIGATION_LINKS = [
   { to: '/weight-tracker', label: 'Weight Tracker' },
   { to: '/yoga-exercises', label: 'Yoga Exercises' },
   { to: '/bmr-calculator', label: 'BMR Calculator' },
-  { to: '/journey-log', label: 'Journey Log' },
   { to: '/health-benefits', label: 'Health Benefits' },
 ];
 
