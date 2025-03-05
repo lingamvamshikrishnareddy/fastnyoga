@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const authMiddleware = require('./middleware/authMiddleware');
@@ -17,10 +18,24 @@ const fastRoutes = require('./routes/fastRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enhanced CORS configuration
+// Enhanced logging utility
+const logger = {
+  info: (message) => {
+    console.log(`[INFO] ${new Date().toISOString()}: ${message}`);
+  },
+  error: (message, error) => {
+    console.error(`[ERROR] ${new Date().toISOString()}: ${message}`, error || '');
+  },
+  warn: (message) => {
+    console.warn(`[WARN] ${new Date().toISOString()}: ${message}`);
+  }
+};
+
+// CORS configuration with multiple frontend URLs
 const allowedOrigins = [
   'http://localhost:3000',
   'https://fastnyoga.vercel.app',
+  'https://fastnyoga-lingamvamshikrishnareddys-projects.vercel.app',
   process.env.FRONTEND_URL,
   ...(process.env.ADDITIONAL_ORIGINS ? process.env.ADDITIONAL_ORIGINS.split(',') : [])
 ].filter(Boolean);
@@ -50,28 +65,18 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-// Enhanced logging function
-const logger = {
-  info: (message) => {
-    console.log(`[INFO] ${new Date().toISOString()}: ${message}`);
-  },
-  error: (message, error) => {
-    console.error(`[ERROR] ${new Date().toISOString()}: ${message}`, error || '');
-  },
-  warn: (message) => {
-    console.warn(`[WARN] ${new Date().toISOString()}: ${message}`);
-  }
-};
-
 // Apply middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Database connection
+// Database connection with enhanced error handling
 const startDatabase = async () => {
   try {
+    // Mongoose strictQuery deprecation warning fix
+    mongoose.set('strictQuery', false);
+    
     await connectDB();
     logger.info('Database connection established successfully');
   } catch (error) {
@@ -80,7 +85,7 @@ const startDatabase = async () => {
   }
 };
 
-// Error handling middleware
+// JSON parsing error handler
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     logger.error('JSON Parsing Error', err);
@@ -93,45 +98,52 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Routes
+// Health check route
 app.get('/api/health', (req, res) => {
   logger.info(`Health check from ${req.ip}`);
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    allowedOrigins: process.env.NODE_ENV === 'development' ? allowedOrigins : undefined
   });
 });
 
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/fasts', authMiddleware, fastRoutes);
 app.use('/api/goals', authMiddleware, goalRoutes);
 app.use('/api/progress', authMiddleware, progressRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 
-// Production static serving with enhanced error handling
+// Production static file serving with enhanced error handling
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, 'client', 'build');
-  logger.info(`Serving static files from: ${clientBuildPath}`);
+  logger.info(`Attempting to serve static files from: ${clientBuildPath}`);
 
   try {
-    const fs = require('fs');
     if (fs.existsSync(clientBuildPath)) {
       app.use(express.static(clientBuildPath));
       
       app.get('*', (req, res) => {
         const indexPath = path.join(clientBuildPath, 'index.html');
-        fs.existsSync(indexPath)
-          ? res.sendFile(indexPath)
-          : res.status(404).send('Frontend build not found');
+        
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          logger.error('index.html not found in build directory');
+          res.status(500).send('Frontend build incomplete');
+        }
       });
     } else {
-      logger.error('Build directory missing');
-      app.get('*', (req, res) => res.status(500).send('Server configuration error'));
+      logger.error('Frontend build directory does not exist');
+      app.get('*', (req, res) => {
+        res.status(500).send('Server configuration error: Build directory missing');
+      });
     }
   } catch (error) {
-    logger.error('Static serving error', error);
-    app.get('*', (req, res) => res.status(500).send('Server error'));
+    logger.error('Error serving static files', error);
+    app.get('*', (req, res) => res.status(500).send('Server error during static file serving'));
   }
 }
 
@@ -144,9 +156,10 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   };
 
-  logger.error('Global Error', errorDetails);
+  logger.error('Global Error Handler', errorDetails);
 
-  if (err.message.includes('CORS')) {
+  // CORS error specific handling
+  if (err.message.includes('not allowed by CORS')) {
     return res.status(403).json({
       status: 'error',
       message: 'Cross-origin request denied',
@@ -154,6 +167,7 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Generic error response
   res.status(err.status || 500).json({
     status: 'error',
     message: err.message || 'Internal server error',
@@ -163,15 +177,40 @@ app.use((err, req, res, next) => {
 
 // Server startup
 const startServer = async () => {
-  await startDatabase();
-  const server = app.listen(PORT, () => logger.info(`
-    🚀 Server running on port ${PORT}
-    Environment: ${process.env.NODE_ENV || 'development'}
-    CORS Allowed Origins: ${allowedOrigins.join(', ')}
-  `));
-  server.on('error', error => logger.error('Server startup failed', error));
+  try {
+    await startDatabase();
+    
+    const server = app.listen(PORT, () => {
+      logger.info(`
+🚀 Server running on port ${PORT}
+Environment: ${process.env.NODE_ENV || 'development'}
+CORS Allowed Origins: ${allowedOrigins.join(', ')}
+      `);
+    });
+
+    // Handle server startup errors
+    server.on('error', error => {
+      logger.error('Server startup failed', error);
+      process.exit(1);
+    });
+  } catch (error) {
+    logger.error('Failed to start server', error);
+    process.exit(1);
+  }
 };
 
+// Graceful shutdown
+process.on('SIGINT', () => {
+  logger.info('SIGINT received. Shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received. Shutting down gracefully');
+  process.exit(0);
+});
+
+// Start the server
 startServer();
 
 module.exports = app;
