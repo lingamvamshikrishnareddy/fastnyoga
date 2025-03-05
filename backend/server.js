@@ -9,7 +9,7 @@ require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
-const weightRoutes = require('./routes/weightRoutes');
+
 const goalRoutes = require('./routes/goalRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -84,7 +84,7 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/fasts', authMiddleware, fastRoutes);
-app.use('/api/weights', authMiddleware, weightRoutes);
+
 app.use('/api/goals', authMiddleware, goalRoutes);
 app.use('/api/progress', authMiddleware, progressRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
