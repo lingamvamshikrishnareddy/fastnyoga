@@ -9,20 +9,17 @@ require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
-
 const goalRoutes = require('./routes/goalRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-const fastRoutes  = require('./routes/fastRoutes')
+const fastRoutes = require('./routes/fastRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
 const allowedOrigins = [
-  
   'http://localhost:3000',
-
   ...process.env.ADDITIONAL_ORIGINS ? process.env.ADDITIONAL_ORIGINS.split(',') : []
 ];
 
@@ -43,10 +40,23 @@ const corsOptions = {
     'Authorization',
     'X-Requested-With',
     'Accept',
-    'X-Request-ID'  // Add this to match your frontend header
+    'X-Request-ID'
   ],
   exposedHeaders: ['Set-Cookie', 'Authorization'],
   optionsSuccessStatus: 204
+};
+
+// Enhanced logging function
+const logger = {
+  info: (message) => {
+    console.log(`[INFO] ${new Date().toISOString()}: ${message}`);
+  },
+  error: (message, error) => {
+    console.error(`[ERROR] ${new Date().toISOString()}: ${message}`, error || '');
+  },
+  warn: (message) => {
+    console.warn(`[WARN] ${new Date().toISOString()}: ${message}`);
+  }
 };
 
 // Apply CORS and other middlewares
@@ -55,14 +65,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Connect to the database
-connectDB();
-
-
+// Connect to the database with enhanced logging
+const startDatabase = async () => {
+  try {
+    await connectDB();
+    logger.info('Database connection established successfully');
+  } catch (error) {
+    logger.error('Failed to connect to the database', error);
+    process.exit(1);
+  }
+};
 
 // Global error handler for JSON parsing errors
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    logger.error('JSON Parsing Error', err);
     return res.status(400).json({ 
       status: 'error',
       message: 'Invalid JSON payload',
@@ -72,8 +89,9 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Health check route
+// Health check route with enhanced logging
 app.get('/api/health', (req, res) => {
+  logger.info(`Health check from ${req.ip}`);
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -84,29 +102,52 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/fasts', authMiddleware, fastRoutes);
-
 app.use('/api/goals', authMiddleware, goalRoutes);
 app.use('/api/progress', authMiddleware, progressRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 
-
-// Serve static files in production
+// Serve static files in production with error handling
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client', 'build')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
-  });
+  const clientBuildPath = path.join(__dirname, 'client', 'build');
+  
+  // Log the exact path being used
+  logger.info(`Attempting to serve static files from: ${clientBuildPath}`);
+  
+  try {
+    // Check if the build directory exists
+    const fs = require('fs');
+    fs.accessSync(clientBuildPath, fs.constants.R_OK);
+    
+    app.use(express.static(clientBuildPath));
+    
+    app.get('*', (req, res) => {
+      const indexPath = path.resolve(clientBuildPath, 'index.html');
+      
+      // Additional check before sending file
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        logger.error(`Index file not found: ${indexPath}`);
+        res.status(404).send('Frontend build not found');
+      }
+    });
+  } catch (error) {
+    logger.error('Error setting up production static file serving', error);
+    // Fallback error handling
+    app.get('*', (req, res) => {
+      res.status(500).send('Frontend build directory not found');
+    });
+  }
 }
 
-// Global error handling middleware
+// Global error handling middleware with enhanced logging
 app.use((err, req, res, next) => {
-  console.error('Error details:', {
+  logger.error('Unhandled Error', {
     message: err.message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     path: req.path,
     method: req.method,
-    body: process.env.NODE_ENV === 'development' ? req.body : undefined,
-    timestamp: new Date().toISOString()
+    body: process.env.NODE_ENV === 'development' ? req.body : undefined
   });
 
   // Handle CORS errors
@@ -126,9 +167,37 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
+// Start server with comprehensive startup logging
+const startServer = async () => {
+  try {
+    // Start database connection first
+    await startDatabase();
+
+    // Start the server
+    const server = app.listen(PORT, () => {
+      logger.info(`
+      🚀 Server Running Successfully! 🎉
+      --------------------------------
+      • Port: ${PORT}
+      • Environment: ${process.env.NODE_ENV || 'development'}
+      • Timestamp: ${new Date().toISOString()}
+      • Process ID: ${process.pid}
+      --------------------------------
+      `);
+    });
+
+    // Handle server startup errors
+    server.on('error', (error) => {
+      logger.error('Server startup failed', error);
+      process.exit(1);
+    });
+  } catch (error) {
+    logger.error('Failed to start server', error);
+    process.exit(1);
+  }
+};
+
+// Initiate server startup
+startServer();
 
 module.exports = app;
