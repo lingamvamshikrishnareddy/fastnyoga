@@ -1,154 +1,116 @@
+// controllers/authController.js
+
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
 
-// Validation helper
+// --- Validation Helper ---
 const validateRegistration = (data) => {
   const errors = [];
-  
-  if (!data.email || !data.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    errors.push('Valid email is required');
-  }
-  
-  if (!data.password || data.password.length < 6) {
-    errors.push('Password must be at least 6 characters long');
-  }
-  
-  if (!data.username || data.username.length < 3) {
-    errors.push('Username must be at least 3 characters long');
-  }
-  
+  if (!data.email || !data.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { errors.push('Valid email is required'); }
+  if (!data.password || data.password.length < 6) { errors.push('Password must be at least 6 characters long'); }
+  if (!data.username || data.username.length < 3) { errors.push('Username must be at least 3 characters long'); }
   return errors;
 };
 
-// JWT helper
+// --- JWT Helper ---
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is not set');
+    logger.error('JWT_SECRET environment variable is not set');
+    throw new Error('Server configuration error [JWT]');
   }
-  
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-  );
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '1d' });
 };
 
+// --- Register Controller ---
 const register = async (req, res) => {
   try {
-    console.log('Registration attempt:', { email: req.body.email, username: req.body.username });
-    
-    // Validate input
+    const { username, email, password } = req.body;
+    logger.info('Registration attempt:', { email, username });
+
     const validationErrors = validateRegistration(req.body);
     if (validationErrors.length > 0) {
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: validationErrors
-      });
+      logger.warn('Registration validation failed:', { email, username, errors: validationErrors });
+      return res.status(400).json({ message: 'Validation failed', errors: validationErrors });
     }
 
-    const { username, email, password } = req.body;
-
-    // Check for existing user
     const existingUser = await User.findOne({
       $or: [{ email: email.toLowerCase() }, { username }]
-    });
+    }).lean();
 
     if (existingUser) {
-      return res.status(400).json({
-        message: existingUser.email === email.toLowerCase() ? 
-          'Email already registered' : 
-          'Username already taken'
-      });
+      const message = existingUser.email === email.toLowerCase() ? 'Email already registered' : 'Username already taken';
+      logger.warn('Registration failed - existing user:', { email, username, reason: message });
+      return res.status(400).json({ message });
     }
 
-    // Create user with hashed password
     const user = new User({
       username,
       email: email.toLowerCase(),
-      password // Password will be hashed by the pre-save middleware
+      password
     });
 
     await user.save();
+    logger.info('User registered successfully:', { userId: user._id, email: user.email });
 
-    // Generate token
     const token = generateToken(user._id);
 
-    // Send response
     res.status(201).json({
       success: true,
       token,
       user: {
-        id: user._id,
+        id: user._id, // Changed from _id to id for consistency if needed
         username: user.username,
         email: user.email
       }
     });
 
   } catch (error) {
-    console.error('Registration error:', {
-      message: error.message,
-      stack: error.stack,
-      body: req.body
-    });
-
+    logger.error('Registration error:', { message: error.message, stack: error.stack });
     if (error.code === 11000) {
-      return res.status(400).json({
-        message: 'This email or username is already registered'
-      });
+      return res.status(400).json({ message: 'This email or username is already registered.' });
     }
-
-    res.status(500).json({
-      message: 'Registration failed. Please try again later.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    if (error.message.includes('[JWT]')) {
+         return res.status(500).json({ message: 'Server configuration error.' });
+    }
+    res.status(500).json({ message: 'Registration failed. Please try again later.' });
   }
 };
 
+// --- Login Controller ---
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    logger.info('Login attempt:', { email });
 
-    // Input validation
     if (!email || !password) {
-      return res.status(400).json({
-        message: 'Email and password are required'
-      });
+      return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Find user and convert email to lowercase for case-insensitive comparison
     const user = await User.findOne({ email: email.toLowerCase() });
-    
-    if (!user) {
-      console.log('Login failed: User not found:', email.toLowerCase());
-      return res.status(401).json({
-        message: 'Invalid credentials'
-      });
+
+    if (!user || !(await user.comparePassword(password))) {
+       logger.warn('Login failed: Invalid credentials for email:', { email });
+       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Use the comparePassword method defined in the User model
-    const isMatch = await user.comparePassword(password);
-    
-    if (!isMatch) {
-      console.log('Login failed: Invalid password for user:', email.toLowerCase());
-      return res.status(401).json({
-        message: 'Invalid credentials'
-      });
-    }
+    logger.info('Login successful for user:', { userId: user._id, email: user.email });
 
-    // Generate token
+    // Inside login function, before generateToken or jwt.sign
+console.log(`AUTH_CONTROLLER_LOGIN: JWT_SECRET Check: ${process.env.JWT_SECRET ? 'Set (' + process.env.JWT_SECRET.substring(0, 3) + '...)' : '!!! UNDEFINED !!!'}`);
+
+
     const token = generateToken(user._id);
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Send success response
     res.json({
       success: true,
       token,
       user: {
-        id: user._id,
+        id: user._id, // Changed from _id to id
         username: user.username,
         email: user.email,
         lastLogin: user.lastLogin
@@ -156,67 +118,60 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', {
-      message: error.message,
-      stack: error.stack
-    });
-
-    res.status(500).json({
-      message: 'Login failed. Please try again later.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    logger.error('Login error:', { message: error.message, stack: error.stack });
+     if (error.message.includes('[JWT]')) {
+          return res.status(500).json({ message: 'Server configuration error.' });
+     }
+    res.status(500).json({ message: 'Login failed. Please try again later.' });
   }
 };
 
-const getUser = async (req, res) => {
+// --- Get Current User Controller (Protected Route) ---  <<<<<<<< RENAMED HERE
+const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select('-password')
-      .lean();
-
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found'
-      });
+    // req.user is populated by the 'protect' middleware
+    if (!req.user || !req.user._id) { // Check for _id as populated by lean() object from middleware
+         logger.error('Get user error: req.user not populated correctly by middleware');
+         return res.status(500).json({ message: 'Authentication error' });
     }
 
+    logger.info('Fetching user data for userId:', { userId: req.user._id });
+
+    // Return the user object attached by the middleware
+    // Ensure frontend consistency: Use 'id' or '_id' based on what frontend expects
     res.json({
       success: true,
-      user
+      user: {
+          _id: req.user._id, // Use _id as provided by middleware
+          id: req.user._id,  // Provide 'id' alias if frontend prefers it
+          username: req.user.username,
+          email: req.user.email
+          // Add other fields from req.user if needed
+      }
     });
 
   } catch (error) {
-    console.error('Get user error:', {
-      message: error.message,
-      userId: req.user.id
-    });
-
-    res.status(500).json({
-      message: 'Failed to fetch user data',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    logger.error('Get user error:', { message: error.message, userId: req.user?._id });
+    res.status(500).json({ message: 'Failed to fetch user data' });
   }
 };
 
+// --- Logout Controller ---
 const logout = async (req, res) => {
   try {
-    // Clear any server-side session data if needed
-    res.json({
-      success: true,
-      message: 'Logged out successfully'
-    });
+    logger.info('User logged out (client-side action):', { userId: req.user?._id });
+    res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({
-      message: 'Logout failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    logger.error('Logout error:', { message: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Logout failed' });
   }
 };
 
+
+// --- Correct Export --- <<<<<<<<<< UPDATED HERE
 module.exports = {
   register,
   login,
-  getUser,
+  getCurrentUser, // Export using the new name
   logout
 };

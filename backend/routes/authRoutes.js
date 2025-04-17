@@ -1,27 +1,37 @@
+// routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
-const { register, login, getUser, logout } = require('../controllers/authController');
-const authMiddleware = require('../middleware/authMiddleware');
-const rateLimit = require('express-rate-limit');
+const { protect } = require('../middleware/authMiddleware');
 
-// Rate limiting configuration
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: { message: 'Too many attempts, please try again later' },
-  skipSuccessfulRequests: true
-});
+// --- Import Controller Functions ---
+// Adjust the path '../controllers/authController' if your file is located elsewhere
+const {
+    register,
+    login,
+    logout,
+    getCurrentUser // Make sure you have a function like this in your controller
+} = require('../controllers/authController');
 
-// Register route
-router.post('/register', register);
+// --- Define Routes ---
 
-// Login route with rate limiting
-router.post('/login', authLimiter, login);
+// @route   POST api/auth/register
+// @desc    Register new user
+// @access  Public
+router.post('/register', register); // Use the imported register function
 
-// Get user route with auth middleware
-router.get('/user', authMiddleware, getUser);
+// @route   POST api/auth/login
+// @desc    Authenticate user & get token
+// @access  Public
+router.post('/login', login);       // Use the imported login function
 
-// Logout route with auth middleware
-router.post('/logout', authMiddleware, logout);
+// @route   GET api/auth/user
+// @desc    Get current logged-in user data
+// @access  Private (requires token via 'protect' middleware)
+router.get('/user', protect, getCurrentUser); // Use the imported function for handling this
+
+// @route   POST api/auth/logout
+// @desc    Logout user (can be used for server-side cleanup if needed)
+// @access  Private (ensures only authenticated users can call it)
+router.post('/logout', protect, logout);    // Use the imported logout function
 
 module.exports = router;

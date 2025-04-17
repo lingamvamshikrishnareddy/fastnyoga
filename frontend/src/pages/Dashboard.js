@@ -1,64 +1,97 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
 import { Trophy, Flame, Clock, Medal } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/card';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/card';
+import api from '../utils/api';
+import { dashboard } from '../utils/api'; // Assuming dashboard is exported from api.js
+
+// Define ERROR_CODES
+const ERROR_CODES = {
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  AUTH_ERROR: 'AUTH_ERROR',
+  // Add other error codes as needed
+};
 
 function Dashboard() {
-  const { user, setUser } = useAuth();
+  const { user, refreshUser, isAuthenticated, authInitialized } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchStats = useCallback(async () => {
+  // Modified fetchStats to ensure auth is initialized first
+  const fetchStats = useCallback(async (retryCount = 0, maxRetries = 2) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await api.get('/dashboard/stats');
-      const data = response.data;
-
-      if (!data || !data.stats) {
-        throw new Error('Invalid response from server');
+      // Wait for auth to be initialized
+      if (!authInitialized) {
+        console.log('Auth not yet initialized, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        return fetchStats(retryCount, maxRetries);
       }
 
-      setStats(data.stats);
+      // If not authenticated, don't even try
+      if (!isAuthenticated) {
+        console.log('Not authenticated, cannot fetch stats');
+        throw new Error('Authentication required');
+      }
 
-      if (setUser && data.user) {
-        setUser(prevUser => ({
-          ...prevUser,
-          streak: data.user.streak,
-          badges: data.user.badges,
-        }));
+      // Log token presence for debugging
+      const token = localStorage.getItem('token');
+      console.log(`Dashboard attempting to fetch stats with token: ${token ? 'Yes' : 'No'}`);
+
+      try {
+        // Use the dashboard endpoint from api utils
+        const data = await dashboard.getStats();
+
+        if (!data || !data.stats) {
+          throw new Error('Invalid response from server');
+        }
+
+        console.log('Stats loaded successfully:', data);
+        setStats(data.stats);
+      } catch (err) {
+        // Existing retry logic
+        if (retryCount < maxRetries &&
+            (err.code === ERROR_CODES.NETWORK_ERROR || err.status >= 500)) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.log(`Retrying after ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchStats(retryCount + 1, maxRetries);
+        }
+        throw err;
       }
     } catch (err) {
       console.error('Error fetching stats:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      setError(err.message || 'Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [setUser]);
+  }, [refreshUser, isAuthenticated, authInitialized]);
 
+  // Use effect with dependencies on auth state
   useEffect(() => {
     let isMounted = true;
 
+    if (isAuthenticated && authInitialized) {
+      fetchStats();
+    }
+
     const handleFastingStateChange = () => {
-      if (isMounted) {
+      if (isMounted && isAuthenticated) {
         fetchStats();
       }
     };
 
-    // Set up event listener for fasting state changes
     window.addEventListener('fastingStateChanged', handleFastingStateChange);
 
-    fetchStats();
-
-    // Cleanup
     return () => {
       isMounted = false;
       window.removeEventListener('fastingStateChanged', handleFastingStateChange);
     };
-  }, [fetchStats]);
+  }, [fetchStats, isAuthenticated, authInitialized]);
+
 
   if (loading) {
     return (

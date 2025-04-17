@@ -1,0 +1,761 @@
+2025-04-15 18:10:38,298 - INFO - MainThread - No input file provided. Using the embedded data.
+2025-04-15 18:10:38,298 - ERROR - MainThread - Error parsing JSON: Invalid control character at: line 46 column 84 (char 2495)
+2025-04-15 18:10:38,298 - ERROR - MainThread - Failed to load yoga data. Exiting.
+2025-04-15 18:12:44,727 - INFO - MainThread - No input file provided. Using the embedded data.
+2025-04-15 18:12:44,728 - INFO - MainThread - Found 32 unique asanas to process
+2025-04-15 18:12:44,728 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:12:46,056 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:14:10,360 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:15:34,552 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:15:35,785 - INFO - MainThread - Initialized driver 1
+2025-04-15 18:15:35,785 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:15:37,139 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:17:01,386 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:18:25,592 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:18:26,823 - INFO - MainThread - Initialized driver 2
+2025-04-15 18:18:26,824 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:18:28,251 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:19:52,458 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:25:37,201 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:25:38,608 - INFO - MainThread - Initialized driver 3
+2025-04-15 18:25:38,612 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:25:40,341 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:27:04,568 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:28:28,800 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:28:30,079 - INFO - MainThread - Initialized driver 4
+2025-04-15 18:28:30,079 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:28:31,417 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:29:55,633 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:43:29,417 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:43:30,632 - INFO - MainThread - Initialized driver 5
+2025-04-15 18:43:30,633 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:43:31,990 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:44:56,210 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:46:20,480 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:46:21,716 - INFO - MainThread - Initialized driver 6
+2025-04-15 18:46:21,719 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:46:23,102 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:47:47,376 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:49:11,629 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:49:13,046 - INFO - MainThread - Initialized driver 7
+2025-04-15 18:49:13,047 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:49:14,651 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:50:38,818 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:52:03,027 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:52:04,397 - INFO - MainThread - Initialized driver 8
+2025-04-15 18:52:04,398 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:52:06,019 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:53:30,219 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:54:54,454 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:54:55,884 - INFO - MainThread - Initialized driver 9
+2025-04-15 18:54:55,884 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:54:57,642 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:56:21,982 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:57:46,235 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 18:57:47,680 - INFO - MainThread - Initialized driver 10
+2025-04-15 18:57:47,680 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 18:57:49,521 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 18:59:13,755 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 19:00:37,974 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 19:00:39,273 - INFO - MainThread - Initialized driver 11
+2025-04-15 19:00:39,274 - INFO - MainThread - ====== WebDriver manager ======
+2025-04-15 19:00:40,907 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 19:02:05,096 - INFO - MainThread - Get LATEST chromedriver version for google-chrome
+2025-04-15 19:03:29,328 - INFO - MainThread - Driver [C:\Users\linga\.wdm\drivers\chromedriver\win64\135.0.7049.84\chromedriver-win32/chromedriver.exe] found in cache
+2025-04-15 19:03:30,638 - INFO - MainThread - Initialized driver 12
+2025-04-15 19:03:30,640 - INFO - Thread-3 (search_worker) - Search worker 0 started
+2025-04-15 19:03:30,640 - INFO - Thread-4 (search_worker) - Search worker 1 started
+2025-04-15 19:03:30,641 - INFO - Thread-5 (search_worker) - Search worker 2 started
+2025-04-15 19:03:30,642 - INFO - Thread-6 (search_worker) - Search worker 3 started
+2025-04-15 19:03:30,642 - INFO - Thread-7 (search_worker) - Search worker 4 started
+2025-04-15 19:03:30,643 - INFO - Thread-8 (search_worker) - Search worker 5 started
+2025-04-15 19:03:30,644 - INFO - Thread-9 (search_worker) - Search worker 6 started
+2025-04-15 19:03:30,644 - INFO - Thread-10 (search_worker) - Search worker 7 started
+2025-04-15 19:03:30,645 - INFO - Thread-11 (search_worker) - Search worker 8 started
+2025-04-15 19:03:30,646 - INFO - Thread-12 (search_worker) - Search worker 9 started
+2025-04-15 19:03:30,647 - INFO - Thread-13 (search_worker) - Search worker 10 started
+2025-04-15 19:03:30,648 - INFO - Thread-14 (search_worker) - Search worker 11 started
+2025-04-15 19:03:30,648 - INFO - Thread-3 (search_worker) - Worker 0 processing: Bhramari Pranayama (Humming Bee Breathing)
+2025-04-15 19:03:30,648 - INFO - Thread-4 (search_worker) - Worker 1 processing: Paschimottanasana (Seated Forward Bend)
+2025-04-15 19:03:30,648 - INFO - Thread-5 (search_worker) - Worker 2 processing: Halasana (Plow Pose)
+2025-04-15 19:03:30,649 - INFO - Thread-6 (search_worker) - Worker 3 processing: Setu Bandhasana (Bridge Pose)
+2025-04-15 19:03:30,649 - INFO - Thread-8 (search_worker) - Worker 5 processing: Sarvangasana (Shoulder Stand)
+2025-04-15 19:03:30,649 - INFO - Thread-7 (search_worker) - Worker 4 processing: Super Brain Yoga
+2025-04-15 19:03:30,649 - INFO - Thread-10 (search_worker) - Worker 7 processing: Lengthening the Spine
+2025-04-15 19:03:30,649 - INFO - Thread-11 (search_worker) - Worker 8 processing: Twisting the Spine
+2025-04-15 19:03:30,650 - INFO - Thread-12 (search_worker) - Worker 9 processing: Bending the Spine
+2025-04-15 19:03:30,650 - INFO - Thread-13 (search_worker) - Worker 10 processing: Side-to-Side Twisting
+2025-04-15 19:03:30,650 - INFO - Thread-9 (search_worker) - Worker 6 processing: Kapal Bhati Pranayama
+2025-04-15 19:03:30,652 - INFO - Thread-14 (search_worker) - Worker 11 processing: Eka Pada Raja Kapotasana
+2025-04-15 19:03:30,681 - INFO - Thread-14 (search_worker) - Searching Art of Living for: Eka Pada Raja Kapotasana
+2025-04-15 19:03:30,710 - INFO - Thread-10 (search_worker) - Searching Art of Living for: Lengthening the Spine
+2025-04-15 19:03:30,711 - INFO - Thread-8 (search_worker) - Searching Art of Living for: Sarvangasana (Shoulder Stand)
+2025-04-15 19:03:30,711 - INFO - Thread-11 (search_worker) - Searching Art of Living for: Twisting the Spine
+2025-04-15 19:03:30,716 - INFO - Thread-13 (search_worker) - Searching Art of Living for: Side-to-Side Twisting
+2025-04-15 19:03:30,718 - INFO - Thread-7 (search_worker) - Searching Art of Living for: Super Brain Yoga
+2025-04-15 19:03:30,718 - INFO - Thread-12 (search_worker) - Searching Art of Living for: Bending the Spine
+2025-04-15 19:03:30,747 - INFO - Thread-9 (search_worker) - Searching Art of Living for: Kapal Bhati Pranayama
+2025-04-15 19:03:32,360 - ERROR - Thread-6 (search_worker) - Error in search worker 3: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=135.0.7049.85)
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C20683]
+	(No symbol) [0x00C0FED0]
+	(No symbol) [0x00C2DD3F]
+	(No symbol) [0x00C93D7F]
+	(No symbol) [0x00CAE129]
+	(No symbol) [0x00C8CE46]
+	(No symbol) [0x00C5C5D3]
+	(No symbol) [0x00C5D424]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	GetHandleVerifier [0x00DFF9B8+91640]
+	GetHandleVerifier [0x00DFFB60+92064]
+	GetHandleVerifier [0x00DEA620+4704]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:32,363 - INFO - Thread-6 (search_worker) - Worker 3 processing: Utkatasana
+2025-04-15 19:03:32,418 - ERROR - Thread-3 (search_worker) - Error in search worker 0: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=135.0.7049.85)
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C20683]
+	(No symbol) [0x00C0FED0]
+	(No symbol) [0x00C2DD3F]
+	(No symbol) [0x00C93D7F]
+	(No symbol) [0x00CAE129]
+	(No symbol) [0x00C8CE46]
+	(No symbol) [0x00C5C5D3]
+	(No symbol) [0x00C5D424]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	GetHandleVerifier [0x00DFF9B8+91640]
+	GetHandleVerifier [0x00DFFB60+92064]
+	GetHandleVerifier [0x00DEA620+4704]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:32,419 - INFO - Thread-3 (search_worker) - Worker 0 processing: Ustrasana
+2025-04-15 19:03:32,601 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=135.0.7049.85)
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C20683]
+	(No symbol) [0x00C0FED0]
+	(No symbol) [0x00C2DD3F]
+	(No symbol) [0x00C93D7F]
+	(No symbol) [0x00CAE129]
+	(No symbol) [0x00C8CE46]
+	(No symbol) [0x00C5C5D3]
+	(No symbol) [0x00C5D424]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	GetHandleVerifier [0x00DFF9B8+91640]
+	GetHandleVerifier [0x00DFFB60+92064]
+	GetHandleVerifier [0x00DEA620+4704]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:32,603 - INFO - Thread-5 (search_worker) - Worker 2 processing: Nadi Shodhan Pranayama (Alternate Nostril Breathing)
+2025-04-15 19:03:33,259 - ERROR - Thread-4 (search_worker) - Error in search worker 1: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=135.0.7049.85)
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C20683]
+	(No symbol) [0x00C0FED0]
+	(No symbol) [0x00C2DD3F]
+	(No symbol) [0x00C93D7F]
+	(No symbol) [0x00CAE129]
+	(No symbol) [0x00C8CE46]
+	(No symbol) [0x00C5C5D3]
+	(No symbol) [0x00C5D424]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	GetHandleVerifier [0x00DFF9B8+91640]
+	GetHandleVerifier [0x00DFFB60+92064]
+	GetHandleVerifier [0x00DEA620+4704]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,265 - INFO - Thread-4 (search_worker) - Worker 1 processing: Bhramari Pranayama (Bee Breath)
+2025-04-15 19:03:33,519 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,520 - INFO - Thread-5 (search_worker) - Worker 2 processing: Hastapadasana (Standing Forward Bend)
+2025-04-15 19:03:33,523 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,524 - INFO - Thread-5 (search_worker) - Worker 2 processing: Janu Shirasana (One-legged Forward Bend)
+2025-04-15 19:03:33,530 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,536 - INFO - Thread-5 (search_worker) - Worker 2 processing: Badhakonasana (Butterfly Pose)
+2025-04-15 19:03:33,554 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,557 - INFO - Thread-5 (search_worker) - Worker 2 processing: Viparita Karani (Legs Up the Wall Pose)
+2025-04-15 19:03:33,567 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,573 - INFO - Thread-5 (search_worker) - Worker 2 processing: Yoga Nidra (Yogic Sleep)
+2025-04-15 19:03:33,582 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,584 - INFO - Thread-5 (search_worker) - Worker 2 processing: Veerbhadrasana (Warrior Pose)
+2025-04-15 19:03:33,598 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,601 - INFO - Thread-5 (search_worker) - Worker 2 processing: Vrikshasana (Tree Pose)
+2025-04-15 19:03:33,608 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,616 - INFO - Thread-5 (search_worker) - Worker 2 processing: Marjariasana (Cat Stretch)
+2025-04-15 19:03:33,624 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,627 - INFO - Thread-5 (search_worker) - Worker 2 processing: Setubandhasana (Bridge Pose)
+2025-04-15 19:03:33,637 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,638 - INFO - Thread-5 (search_worker) - Worker 2 processing: Trikonasana (Triangle Pose)
+2025-04-15 19:03:33,642 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,643 - INFO - Thread-5 (search_worker) - Worker 2 processing: Shavasana (Corpse Pose)
+2025-04-15 19:03:33,651 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,651 - INFO - Thread-5 (search_worker) - Worker 2 processing: Garudasana (Eagle Pose)
+2025-04-15 19:03:33,659 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,661 - INFO - Thread-5 (search_worker) - Worker 2 processing: Paschim Namaskarasana (Reverse Prayer Pose)
+2025-04-15 19:03:33,667 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,668 - INFO - Thread-5 (search_worker) - Worker 2 processing: Ustrasana (Camel Pose)
+2025-04-15 19:03:33,674 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,675 - INFO - Thread-5 (search_worker) - Worker 2 processing: Dhanurasana (Bow Pose)
+2025-04-15 19:03:33,683 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,684 - INFO - Thread-5 (search_worker) - Worker 2 processing: Purvottanasana (Upward Plank Pose)
+2025-04-15 19:03:33,687 - ERROR - Thread-5 (search_worker) - Error in search worker 2: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,689 - INFO - Thread-5 (search_worker) - Search worker 2 finished
+2025-04-15 19:03:33,704 - ERROR - Thread-3 (search_worker) - Error in search worker 0: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,705 - INFO - Thread-3 (search_worker) - Search worker 0 finished
+2025-04-15 19:03:33,719 - ERROR - Thread-6 (search_worker) - Error in search worker 3: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,720 - INFO - Thread-6 (search_worker) - Search worker 3 finished
+2025-04-15 19:03:33,751 - ERROR - Thread-4 (search_worker) - Error in search worker 1: Message: invalid session id
+Stacktrace:
+	GetHandleVerifier [0x00DF80E3+60707]
+	GetHandleVerifier [0x00DF8124+60772]
+	(No symbol) [0x00C204FE]
+	(No symbol) [0x00C5B898]
+	(No symbol) [0x00C8CF06]
+	(No symbol) [0x00C889D5]
+	(No symbol) [0x00C87F66]
+	(No symbol) [0x00BF36E5]
+	(No symbol) [0x00BF3C3E]
+	(No symbol) [0x00BF40CD]
+	GetHandleVerifier [0x0103BBC3+2435075]
+	GetHandleVerifier [0x01037163+2416035]
+	GetHandleVerifier [0x0105350C+2531660]
+	GetHandleVerifier [0x00E0F1B5+155125]
+	GetHandleVerifier [0x00E15B5D+182173]
+	(No symbol) [0x00BF33B0]
+	(No symbol) [0x00BF2BC3]
+	GetHandleVerifier [0x0115D2AC+3620588]
+	BaseThreadInitThunk [0x76605D49+25]
+	RtlInitializeExceptionChain [0x776ECF0B+107]
+	RtlGetAppContainerNamedObjectPath [0x776ECE91+561]
+
+2025-04-15 19:03:33,752 - INFO - Thread-4 (search_worker) - Search worker 1 finished
+2025-04-15 19:03:37,189 - INFO - Thread-8 (search_worker) - Searching Yoga Journal for: Sarvangasana (Shoulder Stand)
+2025-04-15 19:03:39,907 - INFO - Thread-7 (search_worker) - Searching Yoga Journal for: Super Brain Yoga
+2025-04-15 19:03:40,215 - INFO - Thread-9 (search_worker) - Searching Yoga Journal for: Kapal Bhati Pranayama
+2025-04-15 19:03:41,157 - INFO - Thread-12 (search_worker) - Searching Yoga Journal for: Bending the Spine
+2025-04-15 19:03:41,249 - INFO - Thread-14 (search_worker) - Searching Yoga Journal for: Eka Pada Raja Kapotasana
+2025-04-15 19:03:41,288 - INFO - Thread-13 (search_worker) - Searching Yoga Journal for: Side-to-Side Twisting
+2025-04-15 19:03:41,307 - INFO - Thread-10 (search_worker) - Searching Yoga Journal for: Lengthening the Spine
+2025-04-15 19:03:41,490 - INFO - Thread-11 (search_worker) - Searching Yoga Journal for: Twisting the Spine
+2025-04-15 19:03:43,123 - INFO - Thread-8 (search_worker) - Searching Healthline for: Sarvangasana (Shoulder Stand)
+2025-04-15 19:03:47,418 - INFO - Thread-9 (search_worker) - Searching Healthline for: Kapal Bhati Pranayama
+2025-04-15 19:03:49,406 - INFO - Thread-7 (search_worker) - Searching Healthline for: Super Brain Yoga
+2025-04-15 19:03:50,384 - INFO - Thread-12 (search_worker) - Searching Healthline for: Bending the Spine
+2025-04-15 19:03:50,834 - INFO - Thread-14 (search_worker) - Searching Healthline for: Eka Pada Raja Kapotasana
+2025-04-15 19:03:50,835 - INFO - Thread-13 (search_worker) - Searching Healthline for: Side-to-Side Twisting
+2025-04-15 19:03:51,839 - INFO - Thread-10 (search_worker) - Searching Healthline for: Lengthening the Spine
+2025-04-15 19:03:54,198 - INFO - Thread-11 (search_worker) - Searching Healthline for: Twisting the Spine
+2025-04-15 19:04:06,408 - INFO - Thread-11 (search_worker) - Searching Wikimedia Commons for: Twisting the Spine
+2025-04-15 19:04:09,307 - INFO - Thread-8 (search_worker) - Searching Wikimedia Commons for: Sarvangasana (Shoulder Stand)
+2025-04-15 19:04:09,799 - INFO - Thread-7 (search_worker) - Searching Wikimedia Commons for: Super Brain Yoga
+2025-04-15 19:04:09,892 - INFO - Thread-11 (search_worker) - Searching Pexels for: Twisting the Spine
+2025-04-15 19:04:11,056 - INFO - Thread-9 (search_worker) - Searching Wikimedia Commons for: Kapal Bhati Pranayama
+2025-04-15 19:04:12,020 - INFO - Thread-12 (search_worker) - Searching Wikimedia Commons for: Bending the Spine
+2025-04-15 19:04:12,588 - INFO - Thread-14 (search_worker) - Searching Wikimedia Commons for: Eka Pada Raja Kapotasana
+2025-04-15 19:04:16,788 - INFO - Thread-7 (search_worker) - Found image for Super Brain Yoga on wikimedia.org
+2025-04-15 19:04:16,823 - INFO - Thread-7 (search_worker) - Search worker 4 finished
+2025-04-15 19:04:17,051 - INFO - Thread-8 (search_worker) - Found image for Sarvangasana (Shoulder Stand) on wikimedia.org
+2025-04-15 19:04:17,065 - INFO - Thread-8 (search_worker) - Search worker 5 finished
+2025-04-15 19:04:17,297 - INFO - Thread-9 (search_worker) - Searching Pexels for: Kapal Bhati Pranayama
+2025-04-15 19:04:17,313 - INFO - Thread-1 (download_worker) - Downloaded image for Super Brain Yoga to yoga_images\Super Brain Yoga.jpg
+2025-04-15 19:04:17,392 - INFO - Thread-2 (download_worker) - Downloaded image for Sarvangasana (Shoulder Stand) to yoga_images\Sarvangasana (Shoulder Stand).jpg
+2025-04-15 19:04:18,097 - INFO - Thread-14 (search_worker) - Found image for Eka Pada Raja Kapotasana on wikimedia.org
+2025-04-15 19:04:18,111 - INFO - Thread-14 (search_worker) - Search worker 11 finished
+2025-04-15 19:04:18,161 - INFO - Thread-12 (search_worker) - Found image for Bending the Spine on wikimedia.org
+2025-04-15 19:04:18,166 - INFO - Thread-12 (search_worker) - Search worker 9 finished
+2025-04-15 19:04:18,235 - INFO - Thread-13 (search_worker) - Searching Wikimedia Commons for: Side-to-Side Twisting
+2025-04-15 19:04:18,327 - INFO - Thread-10 (search_worker) - Searching Wikimedia Commons for: Lengthening the Spine
+2025-04-15 19:04:18,384 - INFO - Thread-1 (download_worker) - Downloaded image for Eka Pada Raja Kapotasana to yoga_images\Eka Pada Raja Kapotasana.jpg
+2025-04-15 19:04:18,448 - INFO - Thread-2 (download_worker) - Downloaded image for Bending the Spine to yoga_images\Bending the Spine.jpg
+2025-04-15 19:04:21,324 - INFO - Thread-11 (search_worker) - Found image for Twisting the Spine on pexels.com
+2025-04-15 19:04:21,338 - INFO - Thread-11 (search_worker) - Search worker 8 finished
+2025-04-15 19:04:21,472 - INFO - Thread-13 (search_worker) - Found image for Side-to-Side Twisting on wikimedia.org
+2025-04-15 19:04:21,473 - INFO - Thread-13 (search_worker) - Search worker 10 finished
+2025-04-15 19:04:21,650 - INFO - Thread-1 (download_worker) - Downloaded image for Twisting the Spine to yoga_images\Twisting the Spine.jpg
+2025-04-15 19:04:21,699 - INFO - Thread-2 (download_worker) - Downloaded image for Side-to-Side Twisting to yoga_images\Side-to-Side Twisting.jpg
+2025-04-15 19:04:22,118 - INFO - Thread-10 (search_worker) - Searching Pexels for: Lengthening the Spine
+2025-04-15 19:04:22,864 - INFO - Thread-9 (search_worker) - Found image for Kapal Bhati Pranayama on pexels.com
+2025-04-15 19:04:22,864 - INFO - Thread-9 (search_worker) - Search worker 6 finished
+2025-04-15 19:04:23,060 - INFO - Thread-1 (download_worker) - Downloaded image for Kapal Bhati Pranayama to yoga_images\Kapal Bhati Pranayama.webp
+2025-04-15 19:04:28,485 - INFO - Thread-10 (search_worker) - Found image for Lengthening the Spine on pexels.com
+2025-04-15 19:04:28,485 - INFO - Thread-10 (search_worker) - Search worker 7 finished
+2025-04-15 19:04:28,996 - INFO - Thread-2 (download_worker) - Downloaded image for Lengthening the Spine to yoga_images\Lengthening the Spine.webp
+2025-04-15 19:04:57,584 - INFO - MainThread - All drivers closed
+2025-04-15 19:04:57,585 - INFO - MainThread - 
+Successfully found images for 8 out of 32 asanas
+2025-04-15 19:04:57,585 - INFO - MainThread - Results saved to yoga_images\results.json
+2025-04-15 19:04:57,587 - INFO - MainThread - Summary saved to yoga_images\summary.txt

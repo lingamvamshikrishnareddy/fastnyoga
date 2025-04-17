@@ -1,134 +1,132 @@
+// server.js
+
+// --- Load Environment Variables FIRST ---
+// This ensures JWT_SECRET and other env vars are available when other modules are loaded
+require('dotenv').config();
+
+// --- Standard Imports ---
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+
+// --- Custom Modules & Config ---
 const connectDB = require('./config/db');
-const authMiddleware = require('./middleware/authMiddleware');
-require('dotenv').config();
+const redisClient = require('./config/redis'); // Assuming this connects/handles Redis
 
 // Import routes
-const authRoutes = require('./routes/authRoutes');
-
+const authRoutes = require('./routes/authRoutes'); // Contains public (login, register) and private (user, logout) routes
 const goalRoutes = require('./routes/goalRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-const fastRoutes  = require('./routes/fastRoutes')
+const fastRoutes = require('./routes/fastRoutes');
 
+// Import protect middleware
+const { protect } = require('./middleware/authMiddleware');
+
+// --- Initialize Express App ---
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// CORS configuration
-const allowedOrigins = [
-  
-  'http://localhost:3000',
+// --- Core Middleware ---
 
-  ...process.env.ADDITIONAL_ORIGINS ? process.env.ADDITIONAL_ORIGINS.split(',') : []
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin) || origin.includes('vercel.app') || origin.includes('localhost')) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
-  credentials: true,
+// CORS Configuration
+app.use(cors({
+  origin: 'http://localhost:3000', // Specific frontend URL for security
+  credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'X-Request-ID'  // Add this to match your frontend header
-  ],
-  exposedHeaders: ['Set-Cookie', 'Authorization'],
-  optionsSuccessStatus: 204
-};
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'] // Ensure Authorization is allowed
+}));
 
-// Apply CORS and other middlewares
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+// Body Parsers
+app.use(express.json()); // For parsing application/json
+app.use(express.urlencoded({ extended: false })); // For parsing application/x-www-form-urlencoded
 
-// Connect to the database
-connectDB();
+// Cookie Parser
+app.use(cookieParser()); // For handling cookies if needed (e.g., refresh tokens)
 
+// --- Redis Client ---
+// Make Redis client available to route handlers if needed (e.g., req.app.get('redisClient'))
+app.set('redisClient', redisClient);
 
-
-// Global error handler for JSON parsing errors
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ 
-      status: 'error',
-      message: 'Invalid JSON payload',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-  }
-  next(err);
-});
-
-// Health check route
+// --- Health Check Route ---
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    redis: redisClient && redisClient.isReady ? 'connected' : 'disconnected' // Check if redisClient exists and is ready
   });
 });
 
-// API routes
+// --- API Routes ---
+
+// Authentication Routes (/api/auth)
+// Handles login, registration, fetching user data, logout.
+// Note: Protection for specific routes like /api/auth/user and /api/auth/logout
+// is handled *inside* authRoutes.js using the 'protect' middleware.
 app.use('/api/auth', authRoutes);
-app.use('/api/fasts', authMiddleware, fastRoutes);
 
-app.use('/api/goals', authMiddleware, goalRoutes);
-app.use('/api/progress', authMiddleware, progressRoutes);
-app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+// Protected API Routes
+// The 'protect' middleware runs BEFORE the request reaches the specific route handlers below.
+// It verifies the JWT token from the 'Authorization: Bearer <token>' header.
+app.use('/api/fasts', protect, fastRoutes);
+app.use('/api/goals', protect, goalRoutes);
+app.use('/api/progress', protect, progressRoutes);
+app.use('/api/dashboard', protect, dashboardRoutes);
 
-
-// Serve static files in production
+// --- Serve Static Assets in Production ---
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client', 'build')));
+  // Set static folder (adjust path if your structure differs)
+  app.use(express.static(path.join(__dirname, 'client/build')));
+
+  // Catch-all route to serve index.html for client-side routing
   app.get('*', (req, res) => {
     res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
   });
 }
 
-// Global error handling middleware
+// --- Global Error Handling Middleware ---
+// Must be defined AFTER all other app.use() and routes
 app.use((err, req, res, next) => {
-  console.error('Error details:', {
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-    path: req.path,
-    method: req.method,
-    body: process.env.NODE_ENV === 'development' ? req.body : undefined,
-    timestamp: new Date().toISOString()
+  console.error("Global Error Handler Caught:");
+  console.error(err.stack);
+  // Determine status code - default to 500 if not set
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Server Error',
+    // Optionally include stack trace in development
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
   });
+});
 
-  // Handle CORS errors
-  if (err.message && err.message.includes('not allowed by CORS')) {
-    return res.status(403).json({
-      status: 'error',
-      message: 'CORS origin not allowed',
-      allowedOrigins: process.env.NODE_ENV === 'development' ? allowedOrigins : undefined
+// --- Server Initialization ---
+const PORT = process.env.PORT || 5000;
+
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB(); // Assuming this logs success/failure
+
+    // Ensure Redis is connected (optional, depends on redisClient setup)
+    if (redisClient && !redisClient.isReady) {
+      console.warn('Redis client is configured but not connected.');
+      // You might want to attempt connection here or handle it within redis.js
+    }
+
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
     });
+  } catch (error) {
+    console.error(`FATAL: Failed to start server - ${error.message}`);
+    process.exit(1); // Exit process if essential services fail to start
   }
+};
 
-  // Handle other errors
-  res.status(err.status || 500).json({
-    status: 'error',
-    message: err.message || 'Internal server error',
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
+// Execute server startup
+startServer();
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
-
-module.exports = app;
+// Export app for potential testing
+module.exports = { app, redisClient };
