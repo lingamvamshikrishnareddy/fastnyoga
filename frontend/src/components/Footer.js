@@ -49,7 +49,7 @@ function Footer() {
 
         <div className="mt-8 pt-8 border-t border-gray-200">
           <p className="text-center text-gray-600">
-            © {currentYear} Your Company Name. All rights reserved.
+            © {currentYear} www.setica.in. All rights reserved.
           </p>
         </div>
       </div>

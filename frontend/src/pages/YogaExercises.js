@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Heart, Clock, Award } from 'lucide-react';
+import { Play, Heart, Clock, Award, Info, ArrowDown, Eye } from 'lucide-react';
 
 const YogaExercises = () => {
   const [openCategory, setOpenCategory] = useState(null);
   const [activeVideos, setActiveVideos] = useState({});
   const [likedExercises, setLikedExercises] = useState({});
+  const [showInstructions, setShowInstructions] = useState(false);
   
   // Load liked exercises from localStorage on component mount
   useEffect(() => {
@@ -18,6 +19,18 @@ const YogaExercises = () => {
   useEffect(() => {
     localStorage.setItem('yogaLikedExercises', JSON.stringify(likedExercises));
   }, [likedExercises]);
+
+  // Show instructions when a category is opened
+  useEffect(() => {
+    if (openCategory !== null) {
+      setShowInstructions(true);
+      // Auto-hide instructions after 5 seconds
+      const timer = setTimeout(() => {
+        setShowInstructions(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [openCategory]);
 
   const toggleLike = (exerciseName) => {
     setLikedExercises(prev => ({
@@ -370,6 +383,16 @@ const YogaExercises = () => {
 
   const toggleCategory = (index) => {
     setOpenCategory(openCategory === index ? null : index);
+    
+    // Scroll to exercises section when opening a category
+    if (openCategory !== index) {
+      setTimeout(() => {
+        const exercisesSection = document.getElementById('exercises-section');
+        if (exercisesSection) {
+          exercisesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
   };
 
   // Extract YouTube video ID from URL
@@ -421,10 +444,20 @@ const YogaExercises = () => {
     return null;
   };
 
+  // Calculate popularity based on likes (for future use)
+  const calculatePopularity = (exerciseName) => {
+    return likedExercises[exerciseName] ? 1 : 0;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Yoga for Wellness</h1>
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-indigo-900 mb-4">Yoga for Wellness</h1>
+          <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+            Discover personalized yoga exercises to improve your physical and mental well-being
+          </p>
+        </header>
         
         {/* Category Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -432,16 +465,15 @@ const YogaExercises = () => {
             <div 
               key={`category-${index}`}
               onClick={() => toggleCategory(index)}
-              className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+              className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-indigo-50"
             >
-              <div className="h-40 overflow-hidden relative">
-                {/* Using the proper path to the image file in public folder */}
+              <div className="h-48 overflow-hidden relative">
                 <img 
                   src={category.coverImage} 
                   alt={category.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/80 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-4">
                   <h2 className="text-xl font-bold text-white">
                     {category.name}
@@ -452,7 +484,7 @@ const YogaExercises = () => {
                 <p className="text-gray-600 text-sm mb-3">{category.description}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">{category.exercises.length} exercises</span>
-                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                  <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium hover:bg-indigo-200 transition-colors">
                     View Details
                   </span>
                 </div>
@@ -461,122 +493,231 @@ const YogaExercises = () => {
           ))}
         </div>
 
-        {/* Expanded Category Content */}
-        {yogaCategories.map((category, index) => (
-          <div 
-            key={`expanded-${index}`}
-            className={`bg-white rounded-lg shadow-md overflow-hidden mb-6 transition-all duration-300 ${
-              openCategory === index ? 'opacity-100' : 'hidden'
-            }`}
-          >
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800">{category.name}</h2>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCategory(null);
-                  }} 
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+        {/* User Instructions Alert */}
+        {showInstructions && openCategory !== null && (
+          <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6 rounded-md shadow-sm animate-fade-in">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <Info className="h-5 w-5 text-indigo-500" />
               </div>
-              <p className="text-gray-600 mt-2">{category.description}</p>
+              <div className="ml-3">
+                <p className="text-sm text-indigo-800">
+                  <strong>Scroll down</strong> to explore all exercises for {yogaCategories[openCategory].name}. 
+                  Click the <strong>play button</strong> on any exercise card to watch the instructional video.
+                </p>
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowInstructions(false);
+                }}
+                className="ml-auto text-indigo-500 hover:text-indigo-700"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
-            
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {category.exercises.map((exercise, exIndex) => (
-                  <div 
-                    key={`exercise-${exIndex}`}
-                    className="bg-gray-50 rounded-lg overflow-hidden border border-gray-100"
+          </div>
+        )}
+
+        {/* Scroll Down Button */}
+        {openCategory !== null && (
+          <div className="flex justify-center mb-8">
+            <button 
+              onClick={() => {
+                const exercisesSection = document.getElementById('exercises-section');
+                if (exercisesSection) {
+                  exercisesSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              <span className="mr-2">View exercises</span>
+              <ArrowDown className="w-4 h-4 animate-bounce" />
+            </button>
+          </div>
+        )}
+
+        {/* Expanded Category Content */}
+        <div id="exercises-section">
+          {yogaCategories.map((category, index) => (
+            <div 
+              key={`expanded-${index}`}
+              className={`bg-white rounded-xl shadow-lg overflow-hidden mb-10 transition-all duration-500 ${
+                openCategory === index ? 'opacity-100 max-h-full' : 'opacity-0 max-h-0 hidden'
+              }`}
+            >
+              <div className="p-6 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-indigo-900">{category.name}</h2>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCategory(null);
+                    }} 
+                    className="text-indigo-400 hover:text-indigo-600 transition-colors"
                   >
-                    <div className="relative h-48">
-                      {!activeVideos[`${exercise.videoUrl}-${exercise.name}`] ? (
-                        <>
-                          <img 
-                            src={getYouTubeThumbnail(exercise.videoUrl)} 
-                            alt={exercise.name}
-                            className="w-full h-full object-cover"
-                          />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-gray-700 mt-2">{category.description}</p>
+              </div>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {category.exercises.map((exercise, exIndex) => (
+                    <div 
+                      key={`exercise-${exIndex}`}
+                      className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="relative h-48 group">
+                        {!activeVideos[`${exercise.videoUrl}-${exercise.name}`] ? (
+                          <>
+                            <img 
+                              src={getYouTubeThumbnail(exercise.videoUrl)} 
+                              alt={exercise.name}
+                              className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                            />
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-xs rounded-md flex items-center">
+                              <Eye className="w-3 h-3 mr-1" />
+                              <span>Watch video</span>
+                            </div>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playVideo(exercise.videoUrl, exercise.name);
+                              }}
+                              className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors"
+                            >
+                              <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                                <Play className="w-6 h-6 text-indigo-700 ml-1" />
+                              </div>
+                            </button>
+                          </>
+                        ) : (
+                          <iframe 
+                            src={getEmbedUrl(exercise.videoUrl)}
+                            title={exercise.name}
+                            className="absolute inset-0 w-full h-full"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        )}
+                      </div>
+                      
+                      <div className="p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-lg font-medium text-gray-800">{exercise.name}</h3>
                           <button 
+                            className={`${likedExercises[exercise.name] ? 'text-pink-600' : 'text-gray-400 hover:text-pink-500'} transition-colors`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLike(exercise.name);
+                            }}
+                            aria-label={`${likedExercises[exercise.name] ? 'Unlike' : 'Like'} ${exercise.name}`}
+                          >
+                            <Heart 
+                              className="w-5 h-5" 
+                              fill={likedExercises[exercise.name] ? "currentColor" : "none"}
+                            />
+                          </button>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {exercise.duration}
+                          </div>
+                          <div className="flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
+                            <Award className="w-3 h-3 mr-1" />
+                            {exercise.difficulty}
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-600 text-sm mb-3">{exercise.description}</p>
+                        
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-700 mb-2">Benefits:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {exercise.benefits.map((benefit, i) => (
+                              <span 
+                                key={`benefit-${i}`}
+                                className="px-2 py-1 rounded text-xs bg-green-50 text-green-700"
+                              >
+                                {benefit}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {!activeVideos[`${exercise.videoUrl}-${exercise.name}`] && (
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               playVideo(exercise.videoUrl, exercise.name);
                             }}
-                            className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
+                            className="mt-4 w-full py-2 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
                           >
-                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                              <Play className="w-5 h-5 text-indigo-700 ml-1" />
-                            </div>
+                            <Play className="w-4 h-4 mr-2" />
+                            Watch Tutorial
                           </button>
-                        </>
-                      ) : (
-                        <iframe 
-                          src={getEmbedUrl(exercise.videoUrl)}
-                          title={exercise.name}
-                          className="absolute inset-0 w-full h-full"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      )}
-                    </div>
-                    
-                    <div className="p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-medium text-gray-800">{exercise.name}</h3>
-                        <button 
-                          className={`${likedExercises[exercise.name] ? 'text-pink-600' : 'text-pink-500 hover:text-pink-600'}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLike(exercise.name);
-                          }}
-                        >
-                          <Heart 
-                            className="w-4 h-4" 
-                            fill={likedExercises[exercise.name] ? "currentColor" : "none"}
-                          />
-                        </button>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <div className="flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-800">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {exercise.duration}
-                        </div>
-                        <div className="flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800">
-                          <Award className="w-3 h-3 mr-1" />
-                          {exercise.difficulty}
-                        </div>
-                      </div>
-                      
-                      <p className="text-gray-600 text-sm mb-3">{exercise.description}</p>
-                      
-                      <div>
-                        <h4 className="text-xs font-medium text-gray-700 mb-2">Benefits:</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {exercise.benefits.map((benefit, i) => (
-                            <span 
-                              key={`benefit-${i}`}
-                              className="px-2 py-1 rounded text-xs bg-green-50 text-green-700"
-                            >
-                              {benefit}
-                            </span>
-                          ))}
-                        </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+              
+              <div className="p-4 bg-indigo-50 border-t border-indigo-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-indigo-700">Found {category.exercises.length} exercises</span>
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
+                  >
+                    Back to Categories
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Featured or Popular Exercises - Show when no category is selected */}
+        {openCategory === null && (
+          <div className="mt-10 bg-white rounded-xl shadow-md p-6">
+            <h2 className="text-xl font-bold text-indigo-900 mb-4">How to Use This App</h2>
+            <div className="text-gray-700">
+              <ol className="list-decimal pl-5 space-y-2">
+                <li>Select a yoga category from the cards above that fits your wellness needs</li>
+                <li>Browse through the exercises available in that category</li>
+                <li>Click on the play button or "Watch Tutorial" to view instructional videos</li>
+                <li>Like your favorite exercises to find them easily on future visits</li>
+              </ol>
+              <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
+                <p className="text-indigo-700">Begin by selecting a category that interests you from the options above!</p>
               </div>
             </div>
           </div>
-        ))}
+        )}
+        
+       
       </div>
+      
+      {/* Custom Styles */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };
