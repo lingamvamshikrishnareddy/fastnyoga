@@ -13,10 +13,17 @@ const cookieParser = require('cookie-parser');
 
 // --- Custom Modules & Config ---
 const connectDB = require('./config/db');
-const redisClient = require('./config/redis'); // Assuming this connects/handles Redis
+// Modified redis client import to handle connection errors better
+let redisClient;
+try {
+  redisClient = require('./config/redis');
+} catch (error) {
+  console.warn('Redis client failed to initialize:', error.message);
+  redisClient = null;
+}
 
 // Import routes
-const authRoutes = require('./routes/authRoutes'); // Contains public (login, register) and private (user, logout) routes
+const authRoutes = require('./routes/authRoutes');
 const goalRoutes = require('./routes/goalRoutes');
 const progressRoutes = require('./routes/progressRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -32,7 +39,7 @@ const app = express();
 
 // CORS Configuration
 app.use(cors({
-  origin: 'http://localhost:3000', // Specific frontend URL for security
+  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : 'http://localhost:3000',
   credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'] // Ensure Authorization is allowed
@@ -46,8 +53,10 @@ app.use(express.urlencoded({ extended: false })); // For parsing application/x-w
 app.use(cookieParser()); // For handling cookies if needed (e.g., refresh tokens)
 
 // --- Redis Client ---
-// Make Redis client available to route handlers if needed (e.g., req.app.get('redisClient'))
-app.set('redisClient', redisClient);
+// Make Redis client available to route handlers if needed, only if connected
+if (redisClient && redisClient.isReady) {
+  app.set('redisClient', redisClient);
+}
 
 // --- Health Check Route ---
 app.get('/api/health', (req, res) => {
@@ -55,21 +64,16 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    redis: redisClient && redisClient.isReady ? 'connected' : 'disconnected' // Check if redisClient exists and is ready
+    redis: redisClient && redisClient.isReady ? 'connected' : 'disconnected'
   });
 });
 
 // --- API Routes ---
 
 // Authentication Routes (/api/auth)
-// Handles login, registration, fetching user data, logout.
-// Note: Protection for specific routes like /api/auth/user and /api/auth/logout
-// is handled *inside* authRoutes.js using the 'protect' middleware.
 app.use('/api/auth', authRoutes);
 
 // Protected API Routes
-// The 'protect' middleware runs BEFORE the request reaches the specific route handlers below.
-// It verifies the JWT token from the 'Authorization: Bearer <token>' header.
 app.use('/api/fasts', protect, fastRoutes);
 app.use('/api/goals', protect, goalRoutes);
 app.use('/api/progress', protect, progressRoutes);
@@ -77,26 +81,36 @@ app.use('/api/dashboard', protect, dashboardRoutes);
 
 // --- Serve Static Assets in Production ---
 if (process.env.NODE_ENV === 'production') {
-  // Set static folder (adjust path if your structure differs)
-  app.use(express.static(path.join(__dirname, 'client/build')));
-
-  // Catch-all route to serve index.html for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
-  });
+  // Update the static folder path to match Render's structure
+  const staticPath = path.resolve('/opt/render/project/src/backend/client/build');
+  
+  // Check if the directory exists before setting it as static
+  const fs = require('fs');
+  if (fs.existsSync(staticPath)) {
+    app.use(express.static(staticPath));
+    
+    // Catch-all route to serve index.html for client-side routing
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(staticPath, 'index.html'));
+    });
+  } else {
+    console.warn(`Static directory not found at: ${staticPath}`);
+    // Fallback route if build directory doesn't exist
+    app.get('*', (req, res) => {
+      res.status(404).send('Frontend build not found. Please ensure the client build process has completed.');
+    });
+  }
 }
 
 // --- Global Error Handling Middleware ---
-// Must be defined AFTER all other app.use() and routes
 app.use((err, req, res, next) => {
   console.error("Global Error Handler Caught:");
-  console.error(err.stack);
+  console.error(err);
   // Determine status code - default to 500 if not set
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode || 500;
   res.status(statusCode).json({
     success: false,
     error: err.message || 'Server Error',
-    // Optionally include stack trace in development
     stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
   });
 });
@@ -107,21 +121,16 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     // Connect to MongoDB
-    await connectDB(); // Assuming this logs success/failure
-
-    // Ensure Redis is connected (optional, depends on redisClient setup)
-    if (redisClient && !redisClient.isReady) {
-      console.warn('Redis client is configured but not connected.');
-      // You might want to attempt connection here or handle it within redis.js
-    }
+    await connectDB();
 
     // Start Express server
     app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      console.log(`Redis connection status: ${redisClient && redisClient.isReady ? 'connected' : 'disconnected'}`);
     });
   } catch (error) {
     console.error(`FATAL: Failed to start server - ${error.message}`);
-    process.exit(1); // Exit process if essential services fail to start
+    process.exit(1);
   }
 };
 
