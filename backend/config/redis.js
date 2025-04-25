@@ -1,7 +1,12 @@
 const redis = require('redis');
+require('dotenv').config();
 
 const client = redis.createClient({
-  url: 'redis://localhost:6379' // update if your Redis runs on another host or port
+  url: process.env.REDIS_URL,
+  socket: {
+    tls: true,
+    rejectUnauthorized: false, // Required for Redis Cloud
+  },
 });
 
 client.on('error', (err) => {
