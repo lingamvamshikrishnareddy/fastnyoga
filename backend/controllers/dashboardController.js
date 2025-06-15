@@ -3,48 +3,11 @@ const Dashboard = require('../models/Dashboard');
 const User = require('../models/User');
 const Fast = require('../models/Fast');
 const mongoose = require('mongoose');
-const Redis = require('ioredis');
 const logger = require('../utils/logger'); // Assumes logger utility exists
 
-// --- Redis Client & Cache Setup ---
-let redisClient;
+// --- Cache Setup ---
 const CACHE_TTL = 300; // 5 minutes cache TTL
 const REQUEST_TIMEOUT = 10000; // 10 seconds timeout
-
-if (process.env.REDIS_URL) {
-  redisClient = new Redis(process.env.REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    connectTimeout: 10000,
-    enableOfflineQueue: false,
-    retryStrategy(times) {
-      const delay = Math.min(times * 100, 3000);
-      logger.warn(`Redis retrying connection (attempt ${times})...`);
-      return delay;
-    },
-  });
-
-  redisClient.on('error', (err) => {
-    logger.error('Redis Client Error:', err);
-  });
-
-  redisClient.on('connect', () => {
-    logger.info('Redis connected successfully');
-  });
-
-  redisClient.on('ready', () => {
-    logger.info('Redis client is ready.');
-  });
-
-  redisClient.on('reconnecting', () => {
-    logger.warn('Redis client is reconnecting...');
-  });
-
-  redisClient.on('end', () => {
-    logger.warn('Redis connection closed.');
-  });
-} else {
-  logger.warn('REDIS_URL not set. Redis caching disabled. Falling back to memory cache.');
-}
 
 // --- In-memory Cache ---
 const localCache = new Map();
@@ -74,39 +37,22 @@ const memoryCache = {
 // --- Generic Cache Functions ---
 async function getCache(key) {
   try {
-    if (redisClient && redisClient.status === 'ready') {
-      logger.debug(`CACHE: GET ${key} (Redis)`);
-      const data = await redisClient.get(key);
-      if (data) return JSON.parse(data);
-    } else {
-      logger.debug(`CACHE: GET ${key} (Memory)`);
-      const memoryData = await memoryCache.get(key);
-      if (memoryData) return memoryData; // Already parsed/cloned in set
-    }
-    return null; // Explicitly return null if not found in either
+    logger.debug(`CACHE: GET ${key} (Memory)`);
+    const memoryData = await memoryCache.get(key);
+    return memoryData;
   } catch (error) {
     logger.error('Cache GET error:', { key, error: error.message });
-    logger.debug(`CACHE: GET ${key} (Memory - Fallback on error)`);
-    return await memoryCache.get(key); // Fallback to memory cache on Redis error
+    return null;
   }
 }
 
 async function setCache(key, data, ttl = CACHE_TTL) {
   try {
-    const stringData = JSON.stringify(data);
-    const clonedData = JSON.parse(stringData); // Ensure we have a clone for memory cache
-
-    if (redisClient && redisClient.status === 'ready') {
-      logger.debug(`CACHE: SET ${key} (Redis) TTL=${ttl}s`);
-      await redisClient.set(key, stringData, 'EX', ttl);
-    }
-    // Always update memory cache as well, or as primary if Redis unavailable
+    const clonedData = JSON.parse(JSON.stringify(data)); // Ensure we have a clone for memory cache
     logger.debug(`CACHE: SET ${key} (Memory) TTL=${ttl}s`);
     await memoryCache.set(key, clonedData, ttl);
-
   } catch (error) {
     logger.error('Cache SET error:', { key, error: error.message });
-    // Avoid setting fallback here if primary set failed, could lead to inconsistency
   }
 }
 
@@ -124,7 +70,7 @@ exports.getStats = async (req, res) => {
   }
   logger.info(`DASHBOARD_CTRL: Processing stats for validated userId: ${userId}`);
 
-  let timeoutId = null; // <--- Variable to hold the timeout ID
+  let timeoutId = null; // Variable to hold the timeout ID
 
   try {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -148,12 +94,11 @@ exports.getStats = async (req, res) => {
 
     const cachedData = await getCache(cacheKey);
     if (cachedData) {
-      // *** FIX: Clear the timeout if cache is hit ***
+      // Clear the timeout if cache is hit
       if (timeoutId) {
         clearTimeout(timeoutId);
         logger.debug(`DASHBOARD_CTRL: Cleared timeout due to cache hit for ${cacheKey}`);
       }
-      // ********************************************
 
       const elapsedCache = Date.now() - startTime;
       logger.info(`DASHBOARD_CTRL: Cache HIT for ${cacheKey}. Time: ${elapsedCache}ms`);
@@ -232,12 +177,11 @@ exports.getStats = async (req, res) => {
     logger.debug(`DASHBOARD_CTRL: Racing data promise against ${REQUEST_TIMEOUT}ms timeout.`);
     const responseData = await Promise.race([dataPromise, timeoutPromise]);
 
-    // *** FIX: Clear the timeout if data promise wins ***
+    // Clear the timeout if data promise wins
     if (timeoutId) {
       clearTimeout(timeoutId);
       logger.debug(`DASHBOARD_CTRL: Cleared timeout after data promise resolved for ${cacheKey}`);
     }
-    // ************************************************
 
     const elapsed = Date.now() - startTime;
     res.set('X-Response-Time', `${elapsed}ms`);
@@ -245,12 +189,11 @@ exports.getStats = async (req, res) => {
     return res.status(200).json(responseData);
 
   } catch (error) {
-    // *** FIX: Ensure timeout is cleared in case of errors during data fetching ***
+    // Ensure timeout is cleared in case of errors during data fetching
     if (timeoutId) {
       clearTimeout(timeoutId);
       logger.debug(`DASHBOARD_CTRL: Cleared timeout due to error for user ${userId}`);
     }
-    // **************************************************************************
 
     const elapsedError = Date.now() - startTime;
     logger.error(`--- DASHBOARD_CTRL_ERROR in getStats for user ${userId}. Time: ${elapsedError}ms ---`, {
@@ -594,20 +537,3 @@ exports.getLeaderboard = async (req, res) => {
     });
   }
 };
-
-// --- Clean up resources on application shutdown ---
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, cleaning up Redis connection');
-  if (redisClient) {
-    await redisClient.quit();
-  }
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, cleaning up Redis connection');
-  if (redisClient) {
-    await redisClient.quit();
-  }
-  process.exit(0);
-});

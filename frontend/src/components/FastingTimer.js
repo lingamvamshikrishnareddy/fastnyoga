@@ -1,99 +1,99 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Square, Flame, Activity } from 'lucide-react';
-import { fasts } from '../utils/api';
+import React from 'react';
+import { Clock, Square, Flame, Activity, RefreshCw, AlertCircle } from 'lucide-react';
+import { useFasting } from '../context/FastingContext';
 
 const FastingTimer = () => {
-  const [fastState, setFastState] = useState({
-    isRunning: false,
-    startTime: null,
-    elapsedTime: 0,
-    targetHours: 16
-  });
+  // Use the context instead of local state
+  const {
+    fastState,
+    error,
+    isLoading,
+    isInitialized,
+    connectionStatus,
+    progress,
+    caloriesBurned,
+    handleStart,
+    handleStop,
+    handleTargetHoursChange,
+    handleRefresh,
+    handleDismissError,
+    formatTime
+  } = useFasting();
 
-  const [error, setError] = useState(null);
-
-  const formatTime = (ms) => {
-    if (!ms || ms < 0) return '00:00:00';
-    const hours = Math.floor(ms / 3600000);
-    const minutes = Math.floor((ms % 3600000) / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const calculateProgress = useCallback(() => {
-    if (!fastState.isRunning) return 0;
-    const progress = (fastState.elapsedTime / (fastState.targetHours * 3600000)) * 100;
-    return Math.min(Math.max(0, progress), 100);
-  }, [fastState.elapsedTime, fastState.targetHours, fastState.isRunning]);
-
-  const handleStart = async () => {
-    try {
-      setError(null);
-      const startTime = Date.now();
-      
-      const response = await fasts.create({
-        targetHours: fastState.targetHours,
-        startTime: new Date(startTime).toISOString()
-      });
-
-      if (response?.fast) {
-        setFastState(prev => ({
-          ...prev,
-          isRunning: true,
-          startTime,
-          elapsedTime: 0,
-          fastId: response.fast._id
-        }));
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to start fast');
-    }
-  };
-
-  const handleStop = async () => {
-    try {
-      setError(null);
-      if (fastState.fastId) {
-        await fasts.end(fastState.fastId);
-      }
-      
-      setFastState(prev => ({
-        ...prev,
-        isRunning: false,
-        startTime: null,
-        elapsedTime: 0,
-        fastId: null
-      }));
-    } catch (err) {
-      setError(err.message || 'Failed to end fast');
-    }
-  };
-
-  useEffect(() => {
-    let timer;
-    if (fastState.isRunning) {
-      timer = setInterval(() => {
-        setFastState(prev => ({
-          ...prev,
-          elapsedTime: Date.now() - prev.startTime
-        }));
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [fastState.isRunning]);
-
-  const progress = calculateProgress();
-  const caloriesBurned = Math.round((fastState.elapsedTime / 3600000) * 50); // Rough estimate
+  // Show loading state only during initial load
+  if (isLoading && !isInitialized) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
+        <div className="bg-white rounded-3xl p-10 shadow-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your fast...</p>
+            <p className="text-sm text-gray-400 mt-2">
+              Status: {connectionStatus === 'connecting' ? 'Connecting...' : connectionStatus}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-gray-50 min-h-screen font-sans">
       <div className="bg-white rounded-3xl p-10 shadow-lg transition-all duration-300 hover:translate-y-[-5px] hover:shadow-xl">
+        
+        {/* Connection Status Indicator */}
+        <div className="mb-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected' ? 'bg-green-500' : 
+              connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 
+              'bg-red-500'
+            }`}></div>
+            <span className="text-sm text-gray-600">
+              {connectionStatus === 'connected' ? 'Connected' : 
+               connectionStatus === 'connecting' ? 'Connecting...' : 
+               'Connection Error'}
+            </span>
+          </div>
+          
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="text-sm text-gray-600 hover:text-gray-800 underline disabled:no-underline disabled:text-gray-400 flex items-center"
+          >
+            <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Syncing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg">
-            {error}
+          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button 
+              onClick={handleDismissError}
+              className="text-red-700 hover:text-red-900 font-bold ml-4"
+            >
+              ×
+            </button>
           </div>
         )}
 
+        {/* Fast Status Indicator */}
+        {fastState.isRunning && (
+          <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-lg text-center">
+            <span className="flex items-center justify-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              Fast is running
+            </span>
+          </div>
+        )}
+
+        {/* Circular Progress Timer */}
         <div className="relative w-80 h-80 mx-auto mb-12">
           <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
             <circle
@@ -123,9 +123,10 @@ const FastingTimer = () => {
           </div>
         </div>
 
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <div className="bg-white p-6 rounded-2xl shadow-md flex items-center">
-            <Flame className="w-7 h-7 text-gray-600 mr-5" />
+            <Flame className="w-7 h-7 text-orange-500 mr-5" />
             <div>
               <span className="block text-sm text-gray-600 uppercase tracking-wide">
                 Calories Burned
@@ -137,7 +138,7 @@ const FastingTimer = () => {
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-md flex items-center">
-            <Activity className="w-7 h-7 text-gray-600 mr-5" />
+            <Activity className="w-7 h-7 text-green-500 mr-5" />
             <div>
               <span className="block text-sm text-gray-600 uppercase tracking-wide">
                 Progress
@@ -149,25 +150,75 @@ const FastingTimer = () => {
           </div>
         </div>
 
+        {/* Target Hours Selector - only show when not running */}
+        {!fastState.isRunning && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Target Duration (hours)
+            </label>
+            <select
+              value={fastState.targetHours}
+              onChange={(e) => handleTargetHoursChange(Number(e.target.value))}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={12}>12 hours</option>
+              <option value={16}>16 hours</option>
+              <option value={18}>18 hours</option>
+              <option value={20}>20 hours</option>
+              <option value={24}>24 hours</option>
+              <option value={36}>36 hours</option>
+              <option value={48}>48 hours</option>
+            </select>
+          </div>
+        )}
+
+        {/* Control Buttons */}
         <div className="space-y-4">
           {!fastState.isRunning ? (
             <button
               onClick={handleStart}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-4 px-8 rounded-xl font-semibold flex items-center justify-center transition-all duration-300"
+              disabled={isLoading || connectionStatus === 'error'}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white py-4 px-8 rounded-xl font-semibold flex items-center justify-center transition-all duration-300 transform hover:scale-105"
             >
-              <Clock className="w-5 h-5 mr-3" />
-              Start Fast
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Clock className="w-5 h-5 mr-3" />
+                  Start Fast
+                </>
+              )}
             </button>
           ) : (
             <button
               onClick={handleStop}
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-4 px-8 rounded-xl font-semibold flex items-center justify-center transition-all duration-300"
+              disabled={isLoading}
+              className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-4 px-8 rounded-xl font-semibold flex items-center justify-center transition-all duration-300 transform hover:scale-105"
             >
-              <Square className="w-5 h-5 mr-3" />
-              End Fast
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Ending...
+                </>
+              ) : (
+                <>
+                  <Square className="w-5 h-5 mr-3" />
+                  End Fast
+                </>
+              )}
             </button>
           )}
         </div>
+
+        {/* Connection info */}
+        {connectionStatus === 'error' && (
+          <div className="mt-4 text-center text-sm text-gray-500">
+            Having trouble connecting? The app will automatically retry.
+          </div>
+        )}
       </div>
     </div>
   );

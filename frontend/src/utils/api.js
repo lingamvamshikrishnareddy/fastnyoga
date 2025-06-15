@@ -311,7 +311,6 @@ const handleResponseError = async (error) => {
     { originalError: error }
   );
 };
-
 // Initialize API client
 const api = createAPIClient();
 
@@ -339,7 +338,7 @@ const createEndpoint = (method, urlTemplate, defaultErrorMessage, options = {}) 
     const requestId = generateRequestId();
     try {
       console.log(`[API]: ${method.toUpperCase()} ${url}`, payload ? 'with payload' : '');
-      const response = await api[method](url, payload); // Pass payload correctly based on method
+      const response = await api[method](url, payload);
       console.log(`✅ [API]: ${method.toUpperCase()} ${url} Success`);
       return response.data;
     } catch (error) {
@@ -348,12 +347,19 @@ const createEndpoint = (method, urlTemplate, defaultErrorMessage, options = {}) 
          message: error.message,
          status: error.response?.status,
          statusText: error.response?.statusText,
-         url: error.config?.url || url, // Get URL from error config if possible
+         url: error.config?.url || url,
          method: method.toUpperCase(),
-         // responseData: error.response?.data // Be careful logging sensitive data
+         responseData: error.response?.data // Include response data for debugging
        });
-      handleResponseError(error, url, defaultErrorMessage, requestId); // Pass requestId
-      throw error; // Re-throw after handling
+      
+      // Enhanced error message for better debugging
+      const enhancedError = new Error(error.response?.data?.message || error.message || defaultErrorMessage);
+      enhancedError.status = error.response?.status;
+      enhancedError.response = error.response;
+      enhancedError.requestId = requestId;
+      
+      handleResponseError(enhancedError, url, defaultErrorMessage, requestId);
+      throw enhancedError;
     }
   };
 };
@@ -362,59 +368,146 @@ export const auth = {
   register: createEndpoint('post', '/auth/register', 'Registration failed'),
   login: createEndpoint('post', '/auth/login', 'Login failed'),
   logout: createEndpoint('post', '/auth/logout', 'Logout failed'),
-  // getCurrentUser remains the same, relying on the interceptor is better now
   getCurrentUser: createEndpoint('get', '/auth/user', 'Failed to fetch user data'),
 };
 
-// --- Keep working endpoints that use createEndpoint ---
 export const fasts = {
-  getAll: createEndpoint('get', '/fasts/user', 'Failed to fetch fast history', {
-    retryCount: 2,
-    retryDelay: 1000
-  }),
-
-  getCurrentFast: createEndpoint('get', '/fasts/current', 'Failed to fetch current fast', {
-    retryCount: 2,
-    retryDelay: 1000
-  }),
-
-  create: createEndpoint('post', '/fasts/start', 'Failed to start fast'),
-
-  getStats: createEndpoint('get', '/fasts/stats', 'Failed to fetch stats', {
-    retryCount: 2,
-    retryDelay: 1000
-  }),
-
+  getAll: createEndpoint('get', '/fasts/user', 'Failed to fetch fast history'),
+  getStats: createEndpoint('get', '/fasts/stats', 'Failed to fetch stats'),
   getDashboard: createEndpoint('get', '/fasts/dashboard', 'Failed to fetch dashboard data'),
-
   getInsights: createEndpoint('get', '/fasts/insights', 'Failed to fetch insights'),
 
-
-  // --- FIX for fasts.end ---
-  end: async (fastId, data = {}) => {
-    const errorMessage = 'Failed to end fast';
-    if (!fastId) {
-      logger.error(`[API Error] ${errorMessage}: Fast ID is missing.`);
-      throw new APIError(errorMessage + ': Fast ID is missing.', 0, ERROR_CODES.UNKNOWN_ERROR); // Use APIError
-    }
-    const url = `/fasts/end/${fastId}`;
-    logger.debug(`[API] Calling PUT ${url} with data:`, data);
+  /**
+   * Create fast with enhanced error handling for "already active" case
+   */
+  create: async (data) => {
+    const url = '/fasts/start';
+    const requestId = generateRequestId();
+    
     try {
-      // --- Use 'api' instead of 'axiosInstance' ---
-      const response = await api.put(url, data);
+      console.log(`[API]: POST ${url} with payload`);
+      const response = await api.post(url, data);
+      console.log(`✅ [API]: POST ${url} Success`);
       return response.data;
     } catch (error) {
-      // Log here for immediate context
-      logger.error(`[API Error] ${errorMessage} (URL: ${url}):`, error.response?.status, error.message);
-      // Let the interceptor/global handler process it for consistent error object creation
-      throw error; // Re-throw for the main handler/interceptor
-      // Alternatively, call handleResponseError directly if interceptor doesn't catch re-thrown errors well:
-      // return handleResponseError(error); // This would throw the APIError
+      console.error(`❌ [ERROR]: API Error: `, {
+        requestId,
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url || url,
+        method: 'POST',
+        responseData: error.response?.data
+      });
+      
+      // Check for specific "already active fast" error
+      const isAlreadyActiveError = 
+        error.response?.status === 400 && 
+        (error.response?.data?.message?.toLowerCase().includes('already have an active fast') ||
+         error.response?.data?.message?.toLowerCase().includes('already active'));
+      
+      if (isAlreadyActiveError) {
+        const enhancedError = new Error('You already have an active fast running');
+        enhancedError.status = error.response?.status;
+        enhancedError.response = error.response;
+        enhancedError.requestId = requestId;
+        enhancedError.isAlreadyActive = true; // Flag for FastingContext
+        throw enhancedError;
+      }
+      
+      // For other errors, use standard handling
+      const enhancedError = new Error(error.response?.data?.message || error.message || 'Failed to start fast');
+      enhancedError.status = error.response?.status;
+      enhancedError.response = error.response;
+      enhancedError.requestId = requestId;
+      
+      handleResponseError(enhancedError, url, 'Failed to start fast', requestId);
+      throw enhancedError;
     }
   },
 
-  // --- FIX for fasts.update ---
-   update: async (fastId, data = {}) => {
+  /**
+   * getCurrentFast with proper 404 handling
+   */
+  getCurrentFast: async () => {
+    const url = '/fasts/current';
+    logger.debug(`[API] Calling GET ${url}`);
+    try {
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        logger.warn(`[API] GET ${url} returned 404. No active fast found.`);
+        return { success: false, fast: null, message: 'No active fast found.' };
+      }
+      logger.error(`[API] Unexpected error on GET ${url}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * End fast with enhanced error handling
+   */
+  /**
+ * End fast with enhanced error handling
+ */
+end: async (fastId, data = {}) => {
+  const errorMessage = 'Failed to end fast';
+  if (!fastId) {
+    logger.error(`[API Error] ${errorMessage}: Fast ID is missing.`);
+    throw new APIError(errorMessage + ': Fast ID is missing.', 0, ERROR_CODES.UNKNOWN_ERROR);
+  }
+
+  // Make sure we're using the correct endpoint that matches your controller
+  const url = `/fasts/end/${fastId}`;
+  const requestId = generateRequestId();
+
+  try {
+    console.log(`[API]: PUT ${url} with data:`, data);
+    console.log(`[API]: FastId being sent: ${fastId}`);
+    
+    // Add timeout and additional headers if needed
+    const response = await api.put(url, data, {
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    console.log(`✅ [API]: PUT ${url} Success - Response:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ [ERROR]: API Error ending fast: `, {
+      requestId,
+      fastId,
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url || url,
+      method: 'PUT',
+      responseData: error.response?.data,
+      fullError: error
+    });
+
+    // Enhanced error message
+    let errorMsg = errorMessage;
+    if (error.response?.data?.message) {
+      errorMsg = error.response.data.message;
+    } else if (error.message) {
+      errorMsg = error.message;
+    }
+
+    const enhancedError = new Error(errorMsg);
+    enhancedError.status = error.response?.status;
+    enhancedError.response = error.response;
+    enhancedError.requestId = requestId;
+    enhancedError.fastId = fastId;
+
+    throw enhancedError;
+  }
+},
+
+  update: async (fastId, data = {}) => {
      const errorMessage = 'Failed to update fast';
      if (!fastId) {
        logger.error(`[API Error] ${errorMessage}: Fast ID is missing.`);
@@ -423,18 +516,15 @@ export const fasts = {
      const url = `/fasts/${fastId}`;
      logger.debug(`[API] Calling PUT ${url} with data:`, data);
      try {
-       // --- Use 'api' instead of 'axiosInstance' ---
        const response = await api.put(url, data);
        return response.data;
      } catch (error) {
        logger.error(`[API Error] ${errorMessage} (URL: ${url}):`, error.response?.status, error.message);
-       throw error; // Re-throw for the main handler/interceptor
-       // return handleResponseError(error);
+       throw error;
      }
    },
 
-  // --- FIX for fasts.delete ---
-   delete: async (fastId) => {
+  delete: async (fastId) => {
      const errorMessage = 'Failed to delete fast';
      if (!fastId) {
        logger.error(`[API Error] ${errorMessage}: Fast ID is missing.`);
@@ -443,16 +533,13 @@ export const fasts = {
      const url = `/fasts/${fastId}`;
      logger.debug(`[API] Calling DELETE ${url}`);
      try {
-       // --- Use 'api' instead of 'axiosInstance' ---
        const response = await api.delete(url);
        return response.data;
      } catch (error) {
        logger.error(`[API Error] ${errorMessage} (URL: ${url}):`, error.response?.status, error.message);
-       throw error; // Re-throw for the main handler/interceptor
-       // return handleResponseError(error);
+       throw error;
      }
    },
-
 };
 
 export const weights = {

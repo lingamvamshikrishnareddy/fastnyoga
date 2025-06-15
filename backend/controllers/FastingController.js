@@ -1,10 +1,7 @@
-console.log(`[FastingController.js] --- STARTING FILE EXECUTION ---`);
-
 const mongoose = require('mongoose');
 const Fast = require('../models/Fast');
 const User = require('../models/User');
 const { isValidDate } = require('../utils/validation');
-const redis = require('../config/redis');
 const logger = require('../utils/logger');
 
 
@@ -13,7 +10,6 @@ const STREAK_RESET_HOURS = 48;
 const MAX_FASTING_HOURS = 168; // 7 days
 const MIN_FASTING_HOURS = 1;
 const DEFAULT_PAGE_SIZE = 10;
-const CACHE_TTL = 3600; // 1 hour cache TTL
 
 /**
  * Get fasting tips based on elapsed hours - using cache-friendly approach
@@ -46,7 +42,7 @@ const getFastingTips = (hours) => {
 
 /**
  * Batch update user achievements
- * Uses efficient MongoDB update operations and caching
+ * Uses efficient MongoDB update operations
  */
 const updateUserAchievements = async (userId, lastFastEndTime) => {
     const now = new Date();
@@ -129,20 +125,7 @@ const updateUserAchievements = async (userId, lastFastEndTime) => {
             { new: true, select: 'streak badges lastFastEndTime' } // Select fields needed later or for response
         ).lean(); // Use lean if you don't need mongoose methods afterwards
 
-        // Update cache
         if (updatedUser) {
-            try {
-                await redis.setex(`user:${userId}:achievements`, CACHE_TTL, JSON.stringify({
-                    streak: updatedUser.streak,
-                    badges: updatedUser.badges
-                }));
-                // Also clear general user stats cache as streak changed
-                await redis.del(`user:${userId}:stats`);
-                await redis.del(`user:${userId}:dashboard`);
-            } catch (err) {
-                logger.warn('Redis caching error during achievement update:', err);
-                // Non-critical error, continue execution
-            }
             return updatedUser; // Return the updated user data
         }
     }
@@ -163,530 +146,191 @@ const FastingController = {
     /**
      * Start a new fasting session with optimized DB operations
      */
+    // In controllers/FastingController.js
+
+    /**
+     * Start a new fasting session with optimized DB operations
+     */
+    // In controllers/FastingController.js
+
+    // In controllers/FastingController.js
+    // In controllers/FastingController.js
+
     async startFast(req, res) {
-        const session = await mongoose.startSession();
-        session.startTransaction();
+        const logPrefix = '[startFast]';
+        logger.info(`${logPrefix} Received request to start fast.`);
 
         try {
-            // --- Enhanced Logging & userId Retrieval ---
-            logger.debug('[startFast] Function entered.');
-            // Log the raw req.user object received from middleware
-            // Use JSON.stringify to handle potential circular references or complex objects gracefully
-            try {
-                 logger.debug('[startFast] Raw req.user object received:', JSON.stringify(req.user, null, 2));
-             } catch (stringifyError) {
-                 logger.warn('[startFast] Could not stringify req.user object. Raw object:', req.user);
-             }
+            const userId = req.user.id || req.user._id;
 
-
-            let userId = null;
-            let userIdSource = 'none'; // Track where we got the ID from
-
-            if (req.user) {
-                // Prefer 'id' if it exists (often set by JWT strategies using 'id' in payload)
-                if (req.user.id) {
-                    userId = req.user.id;
-                    userIdSource = 'req.user.id';
-                // Fallback to '_id' (common for Mongoose documents attached directly)
-                } else if (req.user._id) {
-                    userId = req.user._id;
-                    userIdSource = 'req.user._id';
-                // Add another fallback if user object *is* the ID string directly (less common)
-                 } else if (typeof req.user === 'string' && mongoose.Types.ObjectId.isValid(req.user)) {
-                     userId = req.user;
-                     userIdSource = 'req.user (as string)';
-                 } else {
-                      logger.warn(`[startFast] Found req.user object, but neither 'id' nor '_id' property contains the user ID. req.user keys: ${Object.keys(req.user).join(', ')}`);
-                  }
-                logger.debug(`[startFast] Attempted retrieval: Found potential ID from ${userIdSource}. Raw Value: ${userId}`);
-            } else {
-                logger.warn('[startFast] req.user object itself is missing or falsy!');
+            if (!userId) {
+                logger.error(`${logPrefix} Critical: User ID not found after authentication.`);
+                return res.status(500).json({ success: false, message: 'Internal Server Error: User identification failed.' });
             }
-
-            // Convert potential ObjectId to string (Crucial for Mongoose queries/validation consistency)
-            if (userId && typeof userId !== 'string') {
-                // Check if it's a Mongoose ObjectId or looks like one before converting
-                 if (userId instanceof mongoose.Types.ObjectId || (typeof userId === 'object' && userId.toString && typeof userId.toString === 'function')) {
-                     try {
-                         const originalId = userId;
-                         userId = userId.toString(); // Convert ObjectId/compatible object to string
-                         logger.debug(`[startFast] Converted userId (Type: ${typeof originalId}) to string: ${userId}`);
-                     } catch (conversionError) {
-                         logger.error(`[startFast] Error converting userId object from ${userIdSource} to string:`, conversionError);
-                         userId = null; // Invalidate if conversion fails
-                     }
-                 } else {
-                      logger.warn(`[startFast] userId from ${userIdSource} is an object but not a recognizable ObjectId or convertible type. Type: ${typeof userId}. Value: ${JSON.stringify(userId)}`);
-                      userId = null; // Invalidate if it's an unexpected object type
-                 }
-            } else if (userId && typeof userId === 'string') {
-                 logger.debug(`[startFast] userId from ${userIdSource} is already a string: ${userId}`);
-            }
-
-
-            // Final validation of userId BEFORE proceeding
-            if (!userId || typeof userId !== 'string' || !mongoose.Types.ObjectId.isValid(userId)) {
-                 logger.error(`[startFast] Critical Error: Invalid or missing userId after all checks. Final Value: '${userId}' (Type: ${typeof userId}). Source: ${userIdSource}. req.user dump: ${JSON.stringify(req.user)}`);
-                 await session.abortTransaction();
-                 // Send a generic 500 but log specifics server-side
-                 return res.status(500).json({ success: false, message: 'Internal Server Error (User identification failed)' });
-            }
-            logger.info(`[startFast] Proceeding with valid userId: ${userId} (Source: ${userIdSource})`);
-            // --- End Enhanced Logging ---
-
-
-            // Now extract body parameters - AFTER userId is confirmed valid
-            const { targetHours, startTime } = req.body;
-
-
-            // Check if an active fast already exists for this user
-            const existingFast = await Fast.findOne(
-                { user: userId, isRunning: true }, // Use the validated string userId
-                { _id: 1 }, // Only need to check for existence
-                { session, lean: true } // Use lean for performance
-            );
-
+            const userIdStr = userId.toString();
+            
+            const existingFast = await Fast.findOne({ user: userIdStr, isRunning: true }).lean();
             if (existingFast) {
-                logger.warn(`[startFast] User ${userId} already has an active fast.`);
-                await session.abortTransaction();
+                logger.warn(`${logPrefix} User ${userIdStr} already has an active fast.`);
                 return res.status(400).json({
                     success: false,
                     message: 'You already have an active fast. Please end it before starting a new one.'
                 });
             }
 
-            // --- Input Validation ---
+            // --- THIS IS THE MANDATORY FIX ---
+            // The server is the single source of truth for time.
+            // IGNORE any startTime from the client and ALWAYS use the server's current time.
+            const { targetHours } = req.body;
+            const startTimeDate = new Date(); // ALWAYS use the server's current time.
+            
             const numericTargetHours = Number(targetHours);
-            if (targetHours === undefined || !Number.isFinite(numericTargetHours) ||
-                numericTargetHours < MIN_FASTING_HOURS || numericTargetHours > MAX_FASTING_HOURS) {
-                logger.warn(`[startFast] Invalid targetHours received: ${targetHours}`);
-                await session.abortTransaction();
+            if (!Number.isFinite(numericTargetHours) || numericTargetHours < 1 || numericTargetHours > 168) {
+                logger.warn(`${logPrefix} Invalid targetHours: ${targetHours}`);
                 return res.status(400).json({
                     success: false,
-                    message: `Invalid target hours. Please enter a duration between ${MIN_FASTING_HOURS} and ${MAX_FASTING_HOURS} hours.`
+                    message: `Invalid target hours. Please enter a duration between 1 and 168 hours.`
                 });
             }
 
-            const startTimeDate = startTime ? new Date(startTime) : new Date();
-
-            if (!isValidDate(startTimeDate)) {
-                logger.warn(`[startFast] Invalid startTime received: ${startTime}`);
-                await session.abortTransaction();
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid start time provided.'
-                });
-            }
-
-            // Check if start time is in the future
-            const now = new Date();
-            if (startTimeDate > now) {
-                 logger.warn(`[startFast] Future startTime received: ${startTimeDate.toISOString()}`);
-                 await session.abortTransaction();
-                 return res.status(400).json({
-                     success: false,
-                     message: 'Start time cannot be in the future.'
-                 });
-             }
-
-            const endTimeDate = new Date(startTimeDate.getTime() + (numericTargetHours * 60 * 60 * 1000));
-
-            // --- Prepare Fast Document Data ---
-            const fastData = {
-                user: userId, // Use the validated userId string
-                startTime: startTimeDate,
-                endTime: endTimeDate, // Predicted end time based on target
+            const newFast = new Fast({
+                user: userIdStr,
+                startTime: startTimeDate, // Use the guaranteed-correct server time
+                endTime: new Date(startTimeDate.getTime() + (numericTargetHours * 3600000)),
                 targetHours: numericTargetHours,
                 isRunning: true,
-                completed: false, // Explicitly false on start
-            };
-            logger.debug('[startFast] Prepared fast data for creation:', fastData);
+                completed: false,
+            });
 
+            const savedFast = await newFast.save();
+            logger.info(`${logPrefix} Fast ${savedFast._id} started successfully for user ${userIdStr}.`);
 
-            // --- Create Fast Document in DB ---
-            // Use Model.create within the session. It expects an array.
-            const creationResult = await Fast.create([fastData], { session });
-            logger.debug('[startFast] Fast.create executed. Result:', creationResult);
-
-            // Validate creation result
-            if (!creationResult || creationResult.length === 0 || !creationResult[0]) {
-                 logger.error('[startFast] Fast.create did not return the expected document.');
-                 throw new Error('Database error: Failed to create fast record.');
-            }
-            const createdFastDocument = creationResult[0]; // Get the created document
-
-
-            // --- Cache the Current Fast ---
-            try {
-                // Ensure we use the document returned from create/save and convert to plain object
-                await redis.setex(`user:${userId}:currentFast`, CACHE_TTL, JSON.stringify(createdFastDocument.toObject()));
-                logger.info(`[startFast] Cached new current fast ${createdFastDocument._id} for user ${userId}`);
-            } catch (err) {
-                // Log cache error but don't fail the request
-                logger.warn(`[startFast] Redis caching error for user ${userId} (non-critical):`, err);
-            }
-
-            // --- Commit Transaction ---
-            await session.commitTransaction();
-            logger.info(`[startFast] Transaction committed. Fast ${createdFastDocument._id} started successfully for user ${userId}.`);
-
-
-            // --- Send Success Response ---
             res.status(201).json({
                 success: true,
-                // Return the plain object version of the created document
-                fast: createdFastDocument.toObject(),
+                fast: savedFast.toObject(),
                 message: 'Fast started successfully'
             });
 
         } catch (error) {
-            // --- Error Handling & Transaction Rollback ---
-            logger.error(`[startFast] Error caught during execution: ${error.message}`, error.stack);
-            if (session.inTransaction()) {
-                try {
-                     await session.abortTransaction();
-                     logger.info('[startFast] Transaction aborted due to error.');
-                 } catch (abortError) {
-                     logger.error('[startFast] Error aborting transaction:', abortError);
-                 }
-            }
-
-            // Check for specific Mongoose validation error
-            if (error instanceof mongoose.Error.ValidationError) {
-                 logger.error('[startFast] Validation Error Details:', error.errors);
-                 // Send 400 for validation errors
-                 res.status(400).json({
-                     success: false,
-                     message: 'Validation failed.',
-                     error: error.message, // Mongoose provides a descriptive message
-                     details: error.errors // Optionally include detailed field errors
-                 });
-             } else {
-                 // Send 500 for other server errors
-                 res.status(500).json({
-                     success: false,
-                     message: 'Server error while starting fast.',
-                     // Avoid sending raw error messages in production if they might leak sensitive info
-                     error: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred.' : error.message
-                 });
-             }
-        } finally {
-            // --- End Session ---
-            // Ensure the session is always closed
-            if (session) {
-                 session.endSession();
-                 logger.debug('[startFast] Mongoose session ended.');
-             }
+            logger.error(`${logPrefix} Error during execution: ${error.message}`, { stack: error.stack });
+            res.status(500).json({
+                success: false,
+                message: 'Server error while starting fast.'
+            });
         }
     },
+    
+    // In controllers/FastingController.js
+     async endFast(req, res) {
+    const logPrefix = '[endFast]';
+    logger.debug(`${logPrefix} Function entered.`);
 
-    /**
-     * End current fasting session with optimized performance
-     */
-    async endFast(req, res) {
-        // Use more specific logging tag
-        const logPrefix = '[endFast]';
-        logger.debug(`${logPrefix} Function entered.`);
+    try {
+        const { fastId } = req.params;
+        const { mood, weightEnd, notes } = req.body;
 
-        let session; // Define session variable
+        logger.debug(`${logPrefix} Request details: fastId='${fastId}', body='${JSON.stringify(req.body)}'`);
 
-        try {
-            // Start session early
-            session = await mongoose.startSession();
-            session.startTransaction();
-            logger.debug(`${logPrefix} Mongoose session started and transaction initiated.`);
-
-            // --- Extract Request Parameters ---
-            const { fastId } = req.params;
-            const { mood, weightEnd, notes } = req.body; // Extract optional fields
-
-            logger.debug(`${logPrefix} Request details: fastId='${fastId}', body='${JSON.stringify(req.body)}'`);
-
-            // Validate fastId format
-            if (!mongoose.Types.ObjectId.isValid(fastId)) {
-                logger.warn(`${logPrefix} Invalid fastId format received: ${fastId}`);
-                await session.abortTransaction(); // Abort before sending response
-                return res.status(400).json({ success: false, message: 'Invalid Fast ID format.' });
-            }
-
-
-            // --- Robust User ID Retrieval ---
-            logger.debug(`${logPrefix} Retrieving user ID.`);
-            try {
-                 logger.debug(`${logPrefix} Raw req.user object received:`, JSON.stringify(req.user, null, 2));
-             } catch (stringifyError) {
-                 logger.warn(`${logPrefix} Could not stringify req.user object. Raw object:`, req.user);
-             }
-
-            let userId = null;
-            let userIdSource = 'none';
-
-            if (req.user) {
-                if (req.user.id) { userId = req.user.id; userIdSource = 'req.user.id'; }
-                else if (req.user._id) { userId = req.user._id; userIdSource = 'req.user._id'; }
-                else if (typeof req.user === 'string' && mongoose.Types.ObjectId.isValid(req.user)) { userId = req.user; userIdSource = 'req.user (as string)';}
-                 else { logger.warn(`${logPrefix} Found req.user object, but no 'id' or '_id'. Keys: ${Object.keys(req.user).join(', ')}`); }
-                logger.debug(`${logPrefix} Attempted retrieval from ${userIdSource}. Raw Value: ${userId}`);
-            } else {
-                logger.warn(`${logPrefix} req.user object is missing or falsy!`);
-            }
-
-            if (userId && typeof userId !== 'string') {
-                 if (userId instanceof mongoose.Types.ObjectId || (typeof userId === 'object' && userId.toString && typeof userId.toString === 'function')) {
-                     try { userId = userId.toString(); logger.debug(`${logPrefix} Converted userId to string: ${userId}`); }
-                     catch (conversionError) { logger.error(`${logPrefix} Error converting userId to string:`, conversionError); userId = null; }
-                 } else { logger.warn(`${logPrefix} userId from ${userIdSource} is unexpected object type. Type: ${typeof userId}.`); userId = null; }
-            } else if (userId && typeof userId === 'string') {
-                 logger.debug(`${logPrefix} userId from ${userIdSource} is already string: ${userId}`);
-            }
-
-            if (!userId || typeof userId !== 'string' || !mongoose.Types.ObjectId.isValid(userId)) {
-                 logger.error(`${logPrefix} Critical Error: Invalid or missing userId after checks. Final Value: '${userId}' (Type: ${typeof userId}). Source: ${userIdSource}.`);
-                 await session.abortTransaction();
-                 return res.status(500).json({ success: false, message: 'Internal Server Error (User identification failed)' });
-            }
-            logger.info(`${logPrefix} Proceeding for user ${userId} to end fast ${fastId}.`);
-            // --- End User ID Retrieval ---
-
-
-            // --- Fetch the Fast Document ---
-            // Find the specific fast belonging to the user, ensuring it's currently running
-            // IMPORTANT: Do NOT use .lean() here because we need to .save() the document later.
-            const fast = await Fast.findOne({
-                _id: fastId,
-                user: userId, // Match user ID
-            }).session(session); // Execute within the transaction
-
-            // Check if fast was found
-            if (!fast) {
-                logger.warn(`${logPrefix} Fast not found (ID: ${fastId}, User: ${userId}) or does not belong to user.`);
-                await session.abortTransaction();
-                return res.status(404).json({
-                    success: false,
-                    message: 'Active fast not found for this user.'
-                });
-            }
-            logger.debug(`${logPrefix} Found fast document: ${fast._id}`);
-
-            // Check if the fast is actually running
-            if (!fast.isRunning) {
-                logger.warn(`${logPrefix} Attempted to end fast ${fastId} which is already completed or cancelled (isRunning=false).`);
-                await session.abortTransaction();
-                return res.status(400).json({
-                    success: false,
-                    message: 'This fast is not currently running.'
-                });
-            }
-
-            // --- Update Fast Details ---
-            logger.debug(`${logPrefix} Updating fast document details for ${fastId}.`);
-            const now = new Date();
-            // Ensure startTime is a Date object before calculation
-            const startTime = fast.startTime instanceof Date ? fast.startTime : new Date(fast.startTime);
-            const elapsedTime = Math.max(0, now.getTime() - startTime.getTime()); // Calculate elapsed time in ms
-
-            fast.endTime = now;
-            fast.completed = true;
-            fast.isRunning = false;
-            fast.elapsedTime = elapsedTime;
-
-            // Add optional fields IF they were provided in the request body
-            if (mood !== undefined && mood !== null) {
-                const numericMood = Number(mood);
-                if (!isNaN(numericMood)) { // Basic validation
-                    fast.mood = numericMood;
-                    logger.debug(`${logPrefix} Updated mood to: ${fast.mood}`);
-                } else {
-                    logger.warn(`${logPrefix} Invalid mood value received: ${mood}. Skipping update.`);
-                }
-            }
-            if (weightEnd !== undefined && weightEnd !== null) {
-                 const numericWeight = Number(weightEnd);
-                 if (!isNaN(numericWeight) && numericWeight > 0) { // Basic validation
-                     fast.weightEnd = numericWeight;
-                     logger.debug(`${logPrefix} Updated weightEnd to: ${fast.weightEnd}`);
-                 } else {
-                     logger.warn(`${logPrefix} Invalid weightEnd value received: ${weightEnd}. Skipping update.`);
-                 }
-             }
-            if (notes !== undefined) { // Allow empty string for notes
-                fast.notes = notes;
-                logger.debug(`${logPrefix} Updated notes.`);
-            }
-
-            // --- Save Updated Fast ---
-            // Save the modified fast document within the session
-            const savedFast = await fast.save({ session });
-            logger.info(`${logPrefix} Successfully saved updated fast document ${savedFast._id}.`);
-
-
-            // --- Update User Achievements ---
-            // Get the end time of the *previous* completed fast for accurate streak calculation
-            logger.debug(`${logPrefix} Fetching last completed fast for user ${userId} (excluding current one ${savedFast._id}) for streak calculation.`);
-            const lastCompletedFast = await Fast.findOne(
-                {
-                    user: userId,
-                    completed: true,
-                    _id: { $ne: savedFast._id } // Exclude the one we just saved
-                },
-                { endTime: 1 }, // Only need the endTime field
-                { session, sort: { endTime: -1 }, lean: true } // Find the most recent one, use lean is ok here
-            );
-            logger.debug(`${logPrefix} Last completed fast found: ${lastCompletedFast ? lastCompletedFast._id : 'None'}`);
-
-            // Call achievement update function, passing the validated userId and the end time of the previous fast
-            logger.debug(`${logPrefix} Updating user achievements for user ${userId}. Previous fast end time: ${lastCompletedFast?.endTime}`);
-            const updatedUserAchievements = await updateUserAchievements(userId, lastCompletedFast?.endTime); // Ensure this function exists and works
-            logger.info(`${logPrefix} User achievements updated for user ${userId}. New streak: ${updatedUserAchievements?.streak}`);
-
-
-            // --- Invalidate Cache ---
-            logger.debug(`${logPrefix} Invalidating relevant Redis caches for user ${userId}.`);
-            try {
-                const cacheKeysToDelete = [
-                    `user:${userId}:currentFast`,    // Remove current fast
-                    `user:${userId}:fastHistory`, // History list will change
-                    `user:${userId}:stats`,       // Stats will change
-                    `user:${userId}:dashboard`,   // Dashboard data will change
-                    `user:${userId}:insights` ,    // Insights might change
-                    `user:${userId}:achievements` // Achievements (streak/badges) changed
-                ];
-                // Use Promise.allSettled for robustness - don't fail request if one key fails
-                const results = await Promise.allSettled(cacheKeysToDelete.map(key => redis.del(key)));
-                results.forEach((result, index) => {
-                    if (result.status === 'rejected') {
-                        logger.warn(`${logPrefix} Failed to delete cache key '${cacheKeysToDelete[index]}':`, result.reason);
-                    }
-                });
-                logger.info(`${logPrefix} Cache invalidation process completed for user ${userId}.`);
-            } catch (err) {
-                // Log but don't fail the request for cache errors
-                logger.warn(`${logPrefix} Redis cache invalidation error during endFast for user ${userId} (non-critical):`, err);
-            }
-
-            // --- Commit Transaction ---
-            await session.commitTransaction();
-            logger.info(`${logPrefix} Transaction committed successfully for ending fast ${fastId}.`);
-
-
-            // --- WebSocket Notification ---
-            // Dispatch event for WebSocket notification if configured
-            if (global.io && global.io.sockets) {
-                const notificationData = {
-                    type: 'fastCompleted',
-                    fastId: savedFast._id.toString(),
-                    streak: updatedUserAchievements?.streak,
-                    badges: updatedUserAchievements?.badges
-                };
-                 global.io.to(`user:${userId}`).emit('fastingUpdated', notificationData);
-                 logger.info(`${logPrefix} WebSocket event 'fastingUpdated' emitted for user ${userId}. Data: ${JSON.stringify(notificationData)}`);
-             } else {
-                 logger.debug(`${logPrefix} WebSocket server (global.io) not available, skipping notification.`);
-             }
-
-
-            // --- Prepare and Send Response ---
-            // Convert savedFast to a plain object for the response
-            const responseFast = savedFast.toObject();
-            const responsePayload = {
-                success: true,
-                fast: { // Send back relevant details of the ended fast
-                    _id: responseFast._id,
-                    startTime: responseFast.startTime,
-                    endTime: responseFast.endTime,
-                    elapsedTime: responseFast.elapsedTime,
-                    completed: responseFast.completed,
-                    isRunning: responseFast.isRunning,
-                    mood: responseFast.mood,
-                    weightEnd: responseFast.weightEnd,
-                    notes: responseFast.notes,
-                    targetHours: responseFast.targetHours,
-                },
-                user: { // Send back updated user achievement info
-                    streak: updatedUserAchievements?.streak,
-                    badges: updatedUserAchievements?.badges
-                },
-                message: 'Fast ended successfully.'
-            };
-             logger.debug(`${logPrefix} Sending success response for fast ${fastId}. Payload: ${JSON.stringify(responsePayload)}`);
-             res.json(responsePayload);
-
-        } catch (error) {
-            // --- Error Handling & Rollback ---
-            logger.error(`${logPrefix} Error caught during execution for fast ${req.params.fastId}, user ${req.user?.id || 'UNKNOWN'}: ${error.message}`, error.stack);
-            // Abort transaction if it's still active and an error occurred
-            if (session && session.inTransaction()) {
-                 try {
-                     await session.abortTransaction();
-                     logger.info(`${logPrefix} Transaction aborted due to error.`);
-                 } catch (abortError) {
-                     // Log error during abort, but proceed with sending error response
-                     logger.error(`${logPrefix} Error aborting transaction:`, abortError);
-                 }
-             }
-
-            // Send appropriate error response
-            // Check for specific error types if needed (e.g., validation)
-             res.status(500).json({
-                 success: false,
-                 message: 'Server error while ending fast.',
-                 error: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred.' : error.message
-             });
-        } finally {
-            // --- End Session ---
-            // Ensure the session is always closed
-            if (session) {
-                 session.endSession();
-                 logger.debug(`${logPrefix} Mongoose session ended.`);
-             }
+        if (!mongoose.Types.ObjectId.isValid(fastId)) {
+            logger.warn(`${logPrefix} Invalid fastId format received: ${fastId}`);
+            return res.status(400).json({ success: false, message: 'Invalid Fast ID format.' });
         }
-    }, // End of endFast method
 
+        // ADD THIS: Extract userId from authenticated user
+        const userId = req.user.id || req.user._id;
+        
+        if (!userId) {
+            logger.error(`${logPrefix} Critical: User ID not found after authentication.`);
+            return res.status(500).json({ success: false, message: 'Internal Server Error: User identification failed.' });
+        }
+        
+        const userIdStr = userId.toString();
+        logger.info(`${logPrefix} Proceeding for user: ${userIdStr}`);
+        
+        // --- Fetch and Update the Fast Document ---
+        const fast = await Fast.findOne({
+            _id: fastId,
+            user: userIdStr, // Use userIdStr instead of userId
+        });
+
+        if (!fast) {
+            logger.warn(`${logPrefix} Fast not found (ID: ${fastId}, User: ${userIdStr}) or does not belong to user.`);
+            return res.status(404).json({
+                success: false,
+                message: 'Active fast not found for this user.'
+            });
+        }
+
+        if (!fast.isRunning) {
+            logger.warn(`${logPrefix} Attempted to end fast ${fastId} which is already completed or cancelled (isRunning=false).`);
+            return res.status(400).json({
+                success: false,
+                message: 'This fast is not currently running.'
+            });
+        }
+
+        // --- Update Fast Details ---
+        const now = new Date();
+        const startTime = fast.startTime instanceof Date ? fast.startTime : new Date(fast.startTime);
+        const elapsedTime = Math.max(0, now.getTime() - startTime.getTime());
+
+        fast.endTime = now;
+        fast.completed = true;
+        fast.isRunning = false;
+        fast.elapsedTime = elapsedTime;
+        
+        // Update optional fields if provided
+        if (mood) fast.mood = mood;
+        if (weightEnd) fast.weightEnd = weightEnd;
+        if (notes) fast.notes = notes;
+
+        // --- Save Updated Fast ---
+        const savedFast = await fast.save();
+        logger.info(`${logPrefix} Successfully saved updated fast document ${savedFast._id}.`);
+
+        // --- Update achievements if needed ---
+        const lastCompletedFast = await Fast.findOne(
+            { user: userIdStr, completed: true, _id: { $ne: savedFast._id } },
+            { endTime: 1 },
+            { sort: { endTime: -1 }, lean: true }
+        );
+        
+        // Call your updateUserAchievements function here if you have one
+        // await updateUserAchievements(userIdStr, savedFast, lastCompletedFast);
+
+        // --- Response ---
+        const responsePayload = {
+            success: true,
+            message: 'Fast ended successfully',
+            fast: savedFast.toObject(),
+            elapsedTime: elapsedTime,
+            elapsedHours: Math.round((elapsedTime / (1000 * 60 * 60)) * 100) / 100
+        };
+
+        res.json(responsePayload);
+
+    } catch (error) {
+        logger.error(`${logPrefix} Error caught during execution...`, error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while ending fast.',
+            error: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred.' : error.message
+        });
+    }
+},
     /**
-     * Get current active fasting session with caching
+     * Get current active fasting session
      */
     async getCurrentFast(req, res) {
         try {
             const userId = req.user.id;
-            const cacheKey = `user:${userId}:currentFast`;
-            let currentFast;
-
-            // Try to get from cache first
-            try {
-                const cachedFast = await redis.get(cacheKey);
-                if (cachedFast) {
-                    currentFast = JSON.parse(cachedFast);
-                    logger.info(`Current fast cache hit for user ${userId}`);
-                } else {
-                    logger.info(`Current fast cache miss for user ${userId}`);
-                }
-            } catch (err) {
-                logger.warn(`Redis get error for ${cacheKey}:`, err);
-                // Continue to DB on cache error
-            }
-
-            // If not in cache or cache failed, get from DB
-            if (!currentFast) {
-                currentFast = await Fast.findOne(
-                    { user: userId, isRunning: true },
-                    null, // Select all fields or specify needed ones
-                    { lean: true } // Use lean for read-only operation
-                );
-
-                // Update cache if found in DB
-                if (currentFast) {
-                    try {
-                        await redis.setex(
-                            cacheKey,
-                            CACHE_TTL,
-                            JSON.stringify(currentFast)
-                        );
-                         logger.info(`Current fast cache set for user ${userId}`);
-                    } catch (err) {
-                        logger.warn(`Redis set error for ${cacheKey}:`, err);
-                    }
-                }
-            }
+            
+            // Get from DB
+            const currentFast = await Fast.findOne(
+                { user: userId, isRunning: true },
+                null, // Select all fields or specify needed ones
+                { lean: true } // Use lean for read-only operation
+            );
 
             if (!currentFast) {
                 return res.status(404).json({
@@ -712,7 +356,7 @@ const FastingController = {
 
              res.json({
                  success: true,
-                 fast: currentFast, // The raw fast object from cache/DB
+                 fast: currentFast, // The raw fast object from DB
                  elapsedTime,       // Calculated elapsed time in ms
                  remainingTime,     // Calculated remaining time in ms
                  progressPercentage,// Calculated progress
@@ -740,19 +384,6 @@ const FastingController = {
             const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || DEFAULT_PAGE_SIZE)); // Add max limit
             const sortBy = ['startTime', 'endTime', 'elapsedTime', 'targetHours'].includes(req.query.sortBy) ? req.query.sortBy : 'endTime'; // Default sort and validation
             const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1; // Default desc
-            const cacheKey = `user:${userId}:fastHistory:${page}:${limit}:${sortBy}:${sortOrder}`;
-
-            // Try cache first
-            try {
-                const cachedData = await redis.get(cacheKey);
-                if (cachedData) {
-                    logger.info(`Fast history cache hit for user ${userId}, page ${page}`);
-                    return res.json(JSON.parse(cachedData));
-                }
-                 logger.info(`Fast history cache miss for user ${userId}, page ${page}`);
-            } catch (err) {
-                logger.warn(`Redis get error for ${cacheKey}:`, err);
-            }
 
             // Define the query conditions
             const query = { user: userId };
@@ -784,17 +415,6 @@ const FastingController = {
                 }
             };
 
-
-            // Cache the result
-            if (fasts.length > 0 || total === 0) { // Cache even empty results
-                try {
-                    await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
-                     logger.info(`Fast history cache set for user ${userId}, page ${page}`);
-                } catch (err) {
-                    logger.warn(`Redis set error for ${cacheKey}:`, err);
-                }
-            }
-
             res.json(result);
         } catch (error) {
             logger.error(`Error fetching user fasts for user ${req.user.id}:`, error);
@@ -807,7 +427,7 @@ const FastingController = {
     },
 
     /**
-     * Get user stats with efficient aggregation pipeline and caching
+     * Get user stats with efficient aggregation pipeline
      */
     async getUserStats(req, res) {
         try {
@@ -816,23 +436,6 @@ const FastingController = {
              if (!mongoose.Types.ObjectId.isValid(userId)) {
                  return res.status(400).json({ success: false, message: 'Invalid user ID format.' });
              }
-            const cacheKey = `user:${userId}:stats`;
-
-            // Try to get from cache first
-            try {
-                const cachedStats = await redis.get(cacheKey);
-                if (cachedStats) {
-                    logger.info(`User stats cache hit for user ${userId}`);
-                    return res.json({
-                        success: true,
-                        stats: JSON.parse(cachedStats)
-                    });
-                }
-                logger.info(`User stats cache miss for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis get error for ${cacheKey}:`, err);
-                // Continue to DB on cache miss/error
-            }
 
             // Use MongoDB aggregation pipeline for efficient stats calculation
             const pipeline = [
@@ -887,50 +490,17 @@ const FastingController = {
              };
 
 
-            // Get user streak and badges - check achievements cache first
-             let userAchievements = null;
-             const achievementsCacheKey = `user:${userId}:achievements`;
-             try {
-                 const cachedAchievements = await redis.get(achievementsCacheKey);
-                 if (cachedAchievements) {
-                     userAchievements = JSON.parse(cachedAchievements);
-                      logger.info(`User achievements cache hit for user ${userId}`);
-                 } else {
-                      logger.info(`User achievements cache miss for user ${userId}`);
-                 }
-             } catch (err) {
-                 logger.warn(`Redis get error for ${achievementsCacheKey}:`, err);
-             }
-
-
-             // If not in cache, fetch from DB
-             if (!userAchievements) {
-                 const user = await User.findById(userId).select('streak badges').lean();
-                 userAchievements = {
-                     streak: user?.streak || 0,
-                     badges: user?.badges || []
-                 };
-                 // Optionally cache this if fetched from DB
-                  try {
-                       await redis.setex(achievementsCacheKey, CACHE_TTL, JSON.stringify(userAchievements));
-                        logger.info(`User achievements cache set for user ${userId}`);
-                  } catch (setErr) {
-                       logger.warn(`Redis set error for ${achievementsCacheKey}:`, setErr);
-                  }
-             }
+            // Get user streak and badges from DB
+            const user = await User.findById(userId).select('streak badges').lean();
+            const userAchievements = {
+                streak: user?.streak || 0,
+                badges: user?.badges || []
+            };
 
 
             // Add streak and badges to the stats object
             stats.streak = userAchievements.streak;
             stats.badges = userAchievements.badges;
-
-            // Cache the combined result
-            try {
-                await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(stats));
-                logger.info(`User stats cache set for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis set error for ${cacheKey}:`, err);
-            }
 
             res.json({
                 success: true,
@@ -959,40 +529,11 @@ const FastingController = {
              if (!mongoose.Types.ObjectId.isValid(userId)) {
                  return res.status(400).json({ success: false, message: 'Invalid user ID format.' });
              }
-            const cacheKey = `user:${userId}:dashboard`;
-
-            // Try to get from cache first
-            try {
-                const cachedData = await redis.get(cacheKey);
-                if (cachedData) {
-                    logger.info(`Dashboard cache hit for user ${userId}`);
-                    return res.json(JSON.parse(cachedData));
-                }
-                logger.info(`Dashboard cache miss for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis get error for ${cacheKey}:`, err);
-            }
 
             // Use Promise.all for parallel data fetching
             const [basicStats, userAchievements, recentFasts, currentFastData] = await Promise.all([
-                // Fetch basic stats (total fasts, longest) - potentially reuse stats logic or cache
+                // Fetch basic stats (total fasts, longest) via aggregation
                  (async () => {
-                     const statsCacheKey = `user:${userId}:stats`;
-                     try {
-                         const cachedStats = await redis.get(statsCacheKey);
-                         if (cachedStats) {
-                             const parsedStats = JSON.parse(cachedStats);
-                             // Return only needed fields for dashboard
-                             return {
-                                 totalFasts: parsedStats.totalFasts,
-                                 longestFast: parsedStats.longestFast,
-                                 avgDuration: parsedStats.avgDuration // Maybe useful for dashboard
-                             };
-                         }
-                     } catch (err) {
-                         logger.warn(`Redis get error for ${statsCacheKey} in dashboard fetch:`, err);
-                     }
-                    // Fallback to aggregation if cache miss/error
                     const pipeline = [
                         {
                             $match: {
@@ -1022,15 +563,8 @@ const FastingController = {
                     return results.length > 0 ? results[0] : { totalFasts: 0, longestFast: 0, avgDuration: 0 };
                  })(),
 
-                // Get user streak/badges - check cache first
+                // Get user streak/badges from DB
                 (async () => {
-                    const achievementsCacheKey = `user:${userId}:achievements`;
-                    try {
-                        const cachedAch = await redis.get(achievementsCacheKey);
-                        if (cachedAch) return JSON.parse(cachedAch);
-                    } catch (err) {
-                        logger.warn(`Redis get error for ${achievementsCacheKey} in dashboard fetch:`, err);
-                    }
                     const user = await User.findById(userId).select('streak badges').lean();
                     return { streak: user?.streak || 0, badges: user?.badges || [] };
                 })(),
@@ -1046,15 +580,8 @@ const FastingController = {
                      }
                  ),
 
-                // Get current ACTIVE fast data (if any) - check cache first
+                // Get current ACTIVE fast data (if any) from DB
                  (async () => {
-                     const currentFastCacheKey = `user:${userId}:currentFast`;
-                     try {
-                         const cachedFast = await redis.get(currentFastCacheKey);
-                         if (cachedFast) return JSON.parse(cachedFast);
-                     } catch (err) {
-                         logger.warn(`Redis get error for ${currentFastCacheKey} in dashboard fetch:`, err);
-                     }
                      return Fast.findOne({ user: userId, isRunning: true }, null, { lean: true });
                  })()
             ]);
@@ -1100,15 +627,7 @@ const FastingController = {
                      mood: fast.mood // Include mood if available
                  })).reverse() // Reverse to show oldest first for chart trends
             };
-
-            // Cache the result
-            try {
-                await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(dashboardData));
-                 logger.info(`Dashboard cache set for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis set error for ${cacheKey}:`, err);
-            }
-
+            
             res.json(dashboardData);
         } catch (error) {
             logger.error(`Error fetching dashboard stats for user ${req.user.id}:`, error);
@@ -1212,25 +731,7 @@ const FastingController = {
 
             // Save the updated fast document
             const updatedFast = await fast.save({ session });
-
-
-            // Invalidate relevant caches since data has changed
-            try {
-                const cacheKeysToInvalidate = [
-                     // If targetHours/endTime changed for running fast, update currentFast cache
-                     ...(fast.isRunning ? [`user:${userId}:currentFast`] : []),
-                     `user:${userId}:fastHistory`, // List view might change
-                     `user:${userId}:stats`,      // Stats might change (e.g., mood avg)
-                     `user:${userId}:dashboard`,  // Dashboard might change
-                     `user:${userId}:insights`    // Insights might change
-                ];
-                // Use Promise.allSettled for robustness
-                await Promise.allSettled(cacheKeysToInvalidate.map(key => redis.del(key)));
-                logger.info(`Cache invalidated for user ${userId} after updating fast ${fastId}`);
-            } catch (err) {
-                logger.warn(`Redis cache invalidation error during updateFast for user ${userId}:`, err);
-            }
-
+            
             await session.commitTransaction();
 
             // Notify connected clients if WebSocket is set up
@@ -1266,7 +767,7 @@ const FastingController = {
 
 
     /**
-     * Delete a fast with proper validation and cache management
+     * Delete a fast with proper validation and streak management
      */
     async deleteFast(req, res) {
         const session = await mongoose.startSession();
@@ -1280,7 +781,7 @@ const FastingController = {
             // Use lean initially just to check existence quickly
             const fastToDelete = await Fast.findOne(
                 { _id: fastId, user: userId },
-                { _id: 1, isRunning: 1, completed: 1, endTime: 1 } // Get fields needed for logic/cache invalidation
+                { _id: 1, isRunning: 1, completed: 1, endTime: 1 } // Get fields needed for logic
             ).session(session).lean();
 
 
@@ -1364,26 +865,6 @@ const FastingController = {
                  logger.info(`Streak recalculated to ${newStreak} for user ${userId}`);
              }
 
-
-            // --- Cache Invalidation ---
-            // Invalidate all potentially affected caches comprehensively
-            try {
-                const cacheKeysToInvalidate = [
-                    // If the deleted fast was the currently running one
-                    ...(fastToDelete.isRunning ? [`user:${userId}:currentFast`] : []),
-                    `user:${userId}:fastHistory`, // Always invalidate history
-                    `user:${userId}:stats`,       // Always invalidate stats
-                    `user:${userId}:dashboard`,   // Always invalidate dashboard
-                    `user:${userId}:insights`,    // Always invalidate insights
-                    `user:${userId}:achievements` // Always invalidate achievements (streak might have changed)
-                ];
-                await Promise.allSettled(cacheKeysToInvalidate.map(key => redis.del(key)));
-                logger.info(`Cache invalidated for user ${userId} after deleting fast ${fastId}`);
-            } catch (err) {
-                logger.warn(`Redis cache invalidation error during deleteFast for user ${userId}:`, err);
-                // Non-critical, proceed with transaction commit
-            }
-
             await session.commitTransaction();
 
             // Notify connected clients
@@ -1427,21 +908,6 @@ const FastingController = {
             const userId = req.user.id;
             if (!mongoose.Types.ObjectId.isValid(userId)) {
                 return res.status(400).json({ success: false, message: 'Invalid user ID format.' });
-            }
-            const cacheKey = `user:${userId}:insights`;
-            const INSIGHTS_CACHE_TTL = CACHE_TTL * 6; // Cache insights longer (e.g., 6 hours)
-
-
-            // Try to get from cache first
-            try {
-                const cachedData = await redis.get(cacheKey);
-                if (cachedData) {
-                    logger.info(`Fasting insights cache hit for user ${userId}`);
-                    return res.json(JSON.parse(cachedData));
-                }
-                logger.info(`Fasting insights cache miss for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis get error for ${cacheKey}:`, err);
             }
 
             // Define time ranges
@@ -1662,14 +1128,6 @@ const FastingController = {
                 insights
             };
 
-            // Cache the insights
-            try {
-                await redis.setex(cacheKey, INSIGHTS_CACHE_TTL, JSON.stringify(result));
-                logger.info(`Fasting insights cache set for user ${userId}`);
-            } catch (err) {
-                logger.warn(`Redis set error for ${cacheKey}:`, err);
-            }
-
             res.json(result);
         } catch (error) {
             logger.error(`Error generating fasting insights for user ${req.user.id}:`, error);
@@ -1682,9 +1140,4 @@ const FastingController = {
     }
 };
 
-console.log(`[FastingController.js] FastingController object defined. Type: ${typeof FastingController}`);
-console.log(`[FastingController.js] Exporting FastingController...`);
-
 module.exports = FastingController;
-
-console.log(`[FastingController.js] --- FINISHED FILE EXECUTION & EXPORT ---`);

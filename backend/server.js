@@ -13,7 +13,6 @@ const cookieParser = require('cookie-parser');
 
 // --- Custom Modules & Config ---
 const connectDB = require('./config/db');
-const redisClient = require('./config/redis'); // Assuming this connects/handles Redis
 
 // Import routes
 const authRoutes = require('./routes/authRoutes'); // Contains public (login, register) and private (user, logout) routes
@@ -45,17 +44,12 @@ app.use(express.urlencoded({ extended: false })); // For parsing application/x-w
 // Cookie Parser
 app.use(cookieParser()); // For handling cookies if needed (e.g., refresh tokens)
 
-// --- Redis Client ---
-// Make Redis client available to route handlers if needed (e.g., req.app.get('redisClient'))
-app.set('redisClient', redisClient);
-
 // --- Health Check Route ---
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    redis: redisClient && redisClient.isReady ? 'connected' : 'disconnected' // Check if redisClient exists and is ready
+    environment: process.env.NODE_ENV
   });
 });
 
@@ -109,12 +103,6 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB(); // Assuming this logs success/failure
 
-    // Ensure Redis is connected (optional, depends on redisClient setup)
-    if (redisClient && !redisClient.isReady) {
-      console.warn('Redis client is configured but not connected.');
-      // You might want to attempt connection here or handle it within redis.js
-    }
-
     // Start Express server
     app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
@@ -129,4 +117,4 @@ const startServer = async () => {
 startServer();
 
 // Export app for potential testing
-module.exports = { app, redisClient };
+module.exports = { app };
