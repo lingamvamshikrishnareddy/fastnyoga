@@ -8,7 +8,7 @@ const Footer = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 to-white pointer-events-none"></div>
       
       <div className="container mx-auto px-4 py-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
           <div className="group">
             <h3 className="text-2xl font-bold text-gray-900 mb-4 transition-colors duration-300 group-hover:text-blue-600">
@@ -50,7 +50,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <a 
-                  href="/about" 
+                  href="/about-us" 
                   className="text-gray-600 hover:text-blue-600 transition-all duration-200 hover:translate-x-1 inline-block relative group"
                 >
                   About Us
@@ -117,22 +117,6 @@ const Footer = () => {
                 </span>
               </li>
             </ul>
-          </div>
-          
-          {/* Newsletter */}
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Stay Healthy</h4>
-            <p className="text-sm text-gray-600 mb-4">Get wellness tips and updates on fasting & yoga</p>
-            <div className="flex flex-col gap-3">
-              <input 
-                type="email"
-                placeholder="Enter your email"
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white"
-              />
-              <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95">
-                Subscribe
-              </button>
-            </div>
           </div>
         </div>
         
