@@ -27,11 +27,29 @@ const { protect } = require('./middleware/authMiddleware');
 // --- Initialize Express App ---
 const app = express();
 
+// Set mongoose strictQuery to false to suppress deprecation warning
+mongoose.set('strictQuery', false);
+
 // --- Core Middleware ---
 
-// CORS Configuration
+// CORS Configuration - FIXED
+const allowedOrigins = [
+  'https://www.fastandyoga.com',      // Without trailing slash
+  'https://www.fastandyoga.com/',     // With trailing slash
+  'http://localhost:3000',            // For local development
+  'http://localhost:3001'             // Alternative local port
+];
+
+// Use environment variable if available, otherwise use default origins
+const corsOrigins = process.env.FRONTEND_URL 
+  ? [
+      process.env.FRONTEND_URL.replace(/\/$/, ''),  // Remove trailing slash
+      process.env.FRONTEND_URL.replace(/\/$/, '') + '/'  // Add trailing slash
+    ]
+  : allowedOrigins;
+
 app.use(cors({
-  origin: 'https://www.fastandyoga.com/', // Specific frontend URL for security
+  origin: corsOrigins,
   credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'] // Ensure Authorization is allowed
@@ -49,7 +67,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    corsOrigins: corsOrigins // Debug info
   });
 });
 
@@ -69,16 +88,14 @@ app.use('/api/goals', protect, goalRoutes);
 app.use('/api/progress', protect, progressRoutes);
 app.use('/api/dashboard', protect, dashboardRoutes);
 
-// --- Serve Static Assets in Production ---
-if (process.env.NODE_ENV === 'production') {
-  // Set static folder (adjust path if your structure differs)
-  app.use(express.static(path.join(__dirname, 'client/build')));
-
-  // Catch-all route to serve index.html for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
-  });
-}
+// --- Static file serving removed for separate frontend deployment ---
+// Since you're deploying frontend separately, remove this section
+// if (process.env.NODE_ENV === 'production') {
+//   app.use(express.static(path.join(__dirname, 'client/build')));
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+//   });
+// }
 
 // --- Global Error Handling Middleware ---
 // Must be defined AFTER all other app.use() and routes
@@ -106,6 +123,7 @@ const startServer = async () => {
     // Start Express server
     app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      console.log(`CORS configured for origins:`, corsOrigins);
     });
   } catch (error) {
     console.error(`FATAL: Failed to start server - ${error.message}`);
