@@ -30,7 +30,7 @@ const Donation = () => {
                 Support Our Ad-Free Mission 🚀
               </h2>
               <p className="text-xl text-gray-700 mb-4">
-                Help us keep SetCart running without ads - forever!
+                Help us keep Setica running without ads - forever!
               </p>
               <p className="text-lg text-gray-600">
                 Your donation covers development, server costs, and the skills that make this possible.
