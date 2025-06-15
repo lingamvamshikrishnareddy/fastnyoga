@@ -31,7 +31,7 @@ const app = express();
 
 // CORS Configuration
 app.use(cors({
-  origin: 'http://localhost:3000', // Specific frontend URL for security
+  origin: 'https://www.fastandyoga.com/', // Specific frontend URL for security
   credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'] // Ensure Authorization is allowed
